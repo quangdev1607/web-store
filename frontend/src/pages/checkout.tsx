@@ -82,35 +82,35 @@ export function CheckoutPage() {
     const newErrors: Partial<FormData> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Tên là bắt buộc';
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone is required';
+      newErrors.phone = 'Số điện thoại là bắt buộc';
     } else if (!/^\d{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid phone number';
+      newErrors.phone = 'Số điện thoại không hợp lệ';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email là bắt buộc';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+      newErrors.email = 'Địa chỉ email không hợp lệ';
     }
 
     if (!formData.province) {
-      newErrors.province = 'Province is required';
+      newErrors.province = 'Tỉnh/Thành phố là bắt buộc';
     }
 
     if (!formData.district) {
-      newErrors.district = 'District is required';
+      newErrors.district = 'Quận/Huyện là bắt buộc';
     }
 
     if (!formData.ward) {
-      newErrors.ward = 'Ward is required';
+      newErrors.ward = 'Phường/Xã là bắt buộc';
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = 'Địa chỉ là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -166,11 +166,11 @@ export function CheckoutPage() {
   if (items.length === 0 && !orderComplete) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Checkout</h1>
+        <h1 className="text-2xl font-bold">Thanh Toán</h1>
         <div className="border rounded-lg p-6">
-          <p className="text-center text-muted-foreground py-8">Your cart is empty</p>
+          <p className="text-center text-muted-foreground py-8">Giỏ hàng của bạn trống</p>
           <div className="text-center">
-            <Link to="/products"><Button variant="outline">Continue Shopping</Button></Link>
+            <Link to="/products"><Button variant="outline">Tiếp Tục Mua Sắm</Button></Link>
           </div>
         </div>
       </div>
@@ -184,16 +184,16 @@ export function CheckoutPage() {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Order Placed Successfully!</h1>
+          <h1 className="text-2xl font-bold mb-2">Đặt Hàng Thành Công!</h1>
           <p className="text-muted-foreground mb-6">
-            Thank you for your order. Your order has been placed and will be processed shortly.
+            Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được tiếp nhận và sẽ được xử lý trong thời gian sớm nhất.
           </p>
           <p className="text-sm text-muted-foreground mb-8">
-            Order ID: #{orderId}
+            Mã đơn hàng: #{orderId}
           </p>
           <div className="flex justify-center space-x-4">
-            <Link to="/products"><Button variant="outline">Continue Shopping</Button></Link>
-            <Link to="/"><Button>Go Home</Button></Link>
+            <Link to="/products"><Button variant="outline">Tiếp Tục Mua Sắm</Button></Link>
+            <Link to="/"><Button>Về Trang Chủ</Button></Link>
           </div>
         </div>
       </div>
@@ -202,27 +202,27 @@ export function CheckoutPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Checkout</h1>
+      <h1 className="text-2xl font-bold">Thanh Toán</h1>
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <div className="border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold text-lg">Contact Information</h2>
+              <h2 className="font-semibold text-lg">Thông Tin Liên Hệ</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name *</label>
+                  <label className="text-sm font-medium">Họ Và Tên *</label>
                   <Input
-                    placeholder="Enter your full name"
+                    placeholder="Nhập họ và tên của bạn"
                     value={formData.name}
                     onChange={e => handleInputChange('name', e.target.value)}
                   />
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number *</label>
+                  <label className="text-sm font-medium">Số Điện Thoại *</label>
                   <Input
-                    placeholder="Enter your phone number"
+                    placeholder="Nhập số điện thoại"
                     value={formData.phone}
                     onChange={e => handleInputChange('phone', e.target.value)}
                   />
@@ -232,7 +232,7 @@ export function CheckoutPage() {
                   <label className="text-sm font-medium">Email *</label>
                   <Input
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="Nhập địa chỉ email"
                     value={formData.email}
                     onChange={e => handleInputChange('email', e.target.value)}
                   />
@@ -242,16 +242,16 @@ export function CheckoutPage() {
             </div>
 
             <div className="border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold text-lg">Shipping Address</h2>
+              <h2 className="font-semibold text-lg">Địa Chỉ Giao Hàng</h2>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Province/City *</label>
+                  <label className="text-sm font-medium">Tỉnh/Thành Phố *</label>
                   <Select
                     value={formData.province}
                     onValueChange={value => handleInputChange('province', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Chọn" />
                     </SelectTrigger>
                     <SelectContent>
                       {provinces.map(province => (
@@ -265,14 +265,14 @@ export function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">District *</label>
+                  <label className="text-sm font-medium">Quận/Huyện *</label>
                   <Select
                     value={formData.district}
                     onValueChange={value => handleInputChange('district', value)}
                     disabled={!formData.province}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Chọn" />
                     </SelectTrigger>
                     <SelectContent>
                       {districts.map(district => (
@@ -286,14 +286,14 @@ export function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Ward/Commune *</label>
+                  <label className="text-sm font-medium">Phường/Xã *</label>
                   <Select
                     value={formData.ward}
                     onValueChange={value => handleInputChange('ward', value)}
                     disabled={!formData.district}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Chọn" />
                     </SelectTrigger>
                     <SelectContent>
                       {wards.map(ward => (
@@ -307,9 +307,9 @@ export function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-3">
-                  <label className="text-sm font-medium">Detailed Address *</label>
+                  <label className="text-sm font-medium">Địa Chỉ Chi Tiết *</label>
                   <Input
-                    placeholder="Enter detailed address (street, number, etc.)"
+                    placeholder="Nhập địa chỉ chi tiết (số nhà, đường, v.v.)"
                     value={formData.address}
                     onChange={e => handleInputChange('address', e.target.value)}
                   />
@@ -321,14 +321,14 @@ export function CheckoutPage() {
             <div className="border rounded-lg p-6 space-y-4">
               <h2 className="font-semibold text-lg flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
-                Payment Method
+                Phương Thức Thanh Toán
               </h2>
               <div className="border rounded-lg p-4 bg-primary/5">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary" />
                   <div>
-                    <p className="font-medium">Cash on Delivery (COD)</p>
-                    <p className="text-sm text-muted-foreground">Pay when you receive your order</p>
+                    <p className="font-medium">Thanh Toán Khi Nhận Hàng (COD)</p>
+                    <p className="text-sm text-muted-foreground">Thanh toán khi nhận được hàng</p>
                   </div>
                 </div>
               </div>
@@ -337,7 +337,7 @@ export function CheckoutPage() {
 
           <div className="space-y-6">
             <div className="border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold text-lg">Order Summary</h2>
+              <h2 className="font-semibold text-lg">Tổng Quan Đơn Hàng</h2>
               <div className="space-y-4 max-h-80 overflow-y-auto">
                 {items.map(item => (
                   <div key={item.product.id} className="flex gap-3">
@@ -348,7 +348,7 @@ export function CheckoutPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{item.product.name}</p>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                      <p className="text-sm text-muted-foreground">SL: {item.quantity}</p>
                       <p className="font-medium text-sm">${(item.product.price * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
@@ -356,18 +356,18 @@ export function CheckoutPage() {
               </div>
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">Tạm Tính</span>
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Truck className="w-4 h-4" />
-                    Shipping
+                    Vận Chuyển
                   </span>
-                  <span>Free</span>
+                  <span>Miễn Phí</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                  <span>Total</span>
+                  <span>Tổng Cộng</span>
                   <span>${totalPrice.toFixed(2)}</span>
                 </div>
               </div>
@@ -375,7 +375,7 @@ export function CheckoutPage() {
 
             {shippingAddress && (
               <div className="border rounded-lg p-4 space-y-2">
-                <h3 className="font-medium text-sm">Shipping to:</h3>
+                <h3 className="font-medium text-sm">Giao hàng đến:</h3>
                 <p className="text-sm text-muted-foreground">{formData.name}</p>
                 <p className="text-sm text-muted-foreground">{formData.phone}</p>
                 <p className="text-sm text-muted-foreground">{shippingAddress}</p>
@@ -388,7 +388,7 @@ export function CheckoutPage() {
               size="lg"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Processing...' : `Place Order - $${totalPrice.toFixed(2)}`}
+              {isSubmitting ? 'Đang xử lý...' : `Đặt Hàng - $${totalPrice.toFixed(2)}`}
             </Button>
           </div>
         </div>

@@ -16,12 +16,12 @@ export function Layout({ children }: LayoutProps) {
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <Link to="/" className="text-xl font-semibold">
-              Web Store
+              Cửa Hàng
             </Link>
           </div>
           <div className="flex items-center space-x-6">
             <Link to="/products" className="text-sm font-medium hover:text-muted-foreground">
-              Products
+              Sản Phẩm
             </Link>
             <Link to="/cart" className="relative flex items-center">
               <ShoppingCart className="h-5 w-5" />
