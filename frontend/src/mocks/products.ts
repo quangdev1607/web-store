@@ -44,7 +44,7 @@ export const mockProducts: Product[] = [
         category: "Quần áo",
         images: [
             "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
-            "https://images.unsplash.com/photo-1583743814966-8936c5b7de1a?w=400",
+            "https://images.unsplash.com/photo-1523381294911-8d3cead13475?w=400",
         ],
         inStock: true,
         rating: 4.0,
