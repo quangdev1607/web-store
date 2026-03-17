@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/shared/layout';
 import { ProductsPage } from '@/pages/products';
+import { CheckoutPage } from '@/pages/checkout';
 import { CartProvider, useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/image';
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
@@ -39,6 +41,7 @@ function HomePage() {
 }
 
 function CartPage() {
+  const navigate = useNavigate();
   const { items, removeItem, updateQuantity, totalItems, totalPrice } = useCart();
 
   if (items.length === 0) {
@@ -112,7 +115,9 @@ function CartPage() {
             <span>Total</span>
             <span>${totalPrice.toFixed(2)}</span>
           </div>
-          <Button className="w-full">Proceed to Checkout</Button>
+          <Button className="w-full" onClick={() => navigate('/checkout')}>
+            Proceed to Checkout
+          </Button>
         </div>
       </div>
     </div>
