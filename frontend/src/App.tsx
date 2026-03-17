@@ -31,20 +31,37 @@ function App() {
 function HomePage() {
     return (
         <div className="space-y-8 text-center">
-            <h1 className="text-3xl font-bold">Chào mừng đến với Cửa Hàng Vạn Năng</h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-                Khám phá những sản phẩm tuyệt vời với giá cả hợp lý. Duyệt qua bộ sưu tập của chúng tôi và tìm chính xác
-                những gì bạn đang tìm kiếm.
-            </p>
+            <div className="space-y-4">
+                <h1 className="text-4xl font-bold text-primary">
+                    Chào Mừng Bé Đến Tiệm Kẹo! 🍬
+                </h1>
+                <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+                    Khám phá thế giới kẹo ngọt và snacks vui vẻ dành cho các bé yêu!
+                    Đầy ắp những món ngon xinh xắn đang chờ đợi các bạn nhỏ đấy!
+                </p>
+            </div>
             <div className="flex justify-center">
                 <Link to="/products">
                     <Button
                         size="lg"
-                        className="px-8 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                        className="px-8 text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-full"
                     >
-                        Mua Ngay
+                        Khám Phá Ngay
                     </Button>
                 </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
+                {[
+                    { emoji: '🍭', label: 'Kẹo' },
+                    { emoji: '🍪', label: 'Bánh quy' },
+                    { emoji: '🍫', label: 'Sô cô la' },
+                    { emoji: '🥤', label: 'Đồ uống' },
+                ].map((item) => (
+                    <div key={item.label} className="bg-secondary/30 rounded-2xl p-4 hover:bg-secondary/50 transition-colors">
+                        <span className="text-3xl">{item.emoji}</span>
+                        <p className="font-semibold mt-2">{item.label}</p>
+                    </div>
+                ))}
             </div>
         </div>
     );
@@ -57,12 +74,12 @@ function CartPage() {
     if (items.length === 0) {
         return (
             <div className="space-y-6">
-                <h1 className="text-2xl font-bold">Giỏ Hàng Của Bạn</h1>
-                <div className="border rounded-lg p-6">
-                    <p className="text-center text-muted-foreground py-8">Giỏ hàng của bạn trống</p>
+                <h1 className="text-2xl font-bold">Giỏ Kẹo Của Bé</h1>
+                <div className="border rounded-2xl p-6">
+                    <p className="text-center text-muted-foreground py-8">Giỏ kẹo còn trống lắm!</p>
                     <div className="text-center">
                         <Link to="/products">
-                            <Button variant="outline">Tiếp Tục Mua Sắm</Button>
+                            <Button variant="outline" className="rounded-full">Mua Kẹo Thôi!</Button>
                         </Link>
                     </div>
                 </div>
@@ -72,39 +89,39 @@ function CartPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Giỏ Hàng Của Bạn ({totalItems} sản phẩm)</h1>
+            <h1 className="text-2xl font-bold">Giỏ Kẹo Của Bé ({totalItems} món)</h1>
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-4">
                     {items.map((item) => (
-                        <div key={item.product.id} className="flex gap-4 border rounded-lg p-4">
+                        <div key={item.product.id} className="flex gap-4 border rounded-2xl p-4 bg-card">
                             <Image
                                 src={item.product.images[0]}
                                 alt={item.product.name}
-                                className="w-24 h-24 object-cover rounded"
+                                className="w-24 h-24 object-cover rounded-xl"
                             />
                             <div className="flex-1">
                                 <h3 className="font-medium">{item.product.name}</h3>
                                 <p className="text-muted-foreground text-sm">{item.product.category}</p>
-                                <p className="font-semibold mt-2">${item.product.price.toFixed(2)}</p>
+                                <p className="font-semibold mt-2 text-primary">{item.product.price.toFixed(0)} VNĐ</p>
                             </div>
                             <div className="flex flex-col items-end justify-between">
                                 <button
                                     onClick={() => removeItem(item.product.id)}
-                                    className="text-red-500 text-sm hover:underline"
+                                    className="text-destructive text-sm hover:underline"
                                 >
                                     Xóa
                                 </button>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 bg-secondary/30 rounded-full px-2">
                                     <button
                                         onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                        className="w-8 h-8 border rounded hover:bg-gray-100"
+                                        className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center"
                                     >
                                         -
                                     </button>
-                                    <span className="w-8 text-center">{item.quantity}</span>
+                                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
                                     <button
                                         onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                        className="w-8 h-8 border rounded hover:bg-gray-100"
+                                        className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center"
                                     >
                                         +
                                     </button>
@@ -113,22 +130,22 @@ function CartPage() {
                         </div>
                     ))}
                 </div>
-                <div className="border rounded-lg p-6 h-fit space-y-4">
-                    <h2 className="font-semibold text-lg">Tổng Quan Đơn Hàng</h2>
+                <div className="border rounded-2xl p-6 h-fit space-y-4 bg-card">
+                    <h2 className="font-semibold text-lg">Tổng Kết</h2>
                     <div className="flex justify-between">
                         <span>Tạm Tính</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span className="font-semibold">{totalPrice.toFixed(0)} VNĐ</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>Vận Chuyển</span>
-                        <span>Miễn Phí</span>
+                        <span>Giao Hàng</span>
+                        <span className="text-green-600 font-semibold">Miễn Phí</span>
                     </div>
-                    <div className="border-t pt-4 flex justify-between font-semibold">
+                    <div className="border-t pt-4 flex justify-between font-bold text-lg">
                         <span>Tổng Cộng</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span className="text-primary">{totalPrice.toFixed(0)} VNĐ</span>
                     </div>
-                    <Button className="w-full" onClick={() => navigate("/checkout")}>
-                        Tiến Hành Thanh Toán
+                    <Button className="w-full rounded-full" onClick={() => navigate("/checkout")}>
+                        Thanh Toán Ngay
                     </Button>
                 </div>
             </div>
@@ -149,11 +166,11 @@ function ProductDetailPage() {
         return (
             <div className="space-y-6">
                 <h1 className="text-2xl font-bold">Không Tìm Thấy Sản Phẩm</h1>
-                <div className="border rounded-lg p-6">
-                    <p className="text-center text-muted-foreground py-8">Sản phẩm bạn đang tìm kiếm không tồn tại.</p>
+                <div className="border rounded-2xl p-6">
+                    <p className="text-center text-muted-foreground py-8">Ồ! Sản phẩm này đi đâu mất rồi!</p>
                     <div className="text-center">
                         <Link to="/products">
-                            <Button variant="outline">Quay Lại Sản Phẩm</Button>
+                            <Button variant="outline" className="rounded-full">Quay Lại</Button>
                         </Link>
                     </div>
                 </div>
@@ -179,7 +196,7 @@ function ProductDetailPage() {
         <div className="space-y-8">
             <button
                 onClick={() => navigate(-1)}
-                className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center text-muted-foreground hover:text-primary transition-colors font-medium"
             >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Quay Lại
@@ -187,7 +204,7 @@ function ProductDetailPage() {
 
             <div className="grid gap-8 lg:grid-cols-2">
                 <div className="space-y-4">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    <div className="aspect-square rounded-2xl overflow-hidden bg-secondary/20">
                         <Image
                             src={product.images[selectedImage]}
                             alt={product.name}
@@ -200,10 +217,10 @@ function ProductDetailPage() {
                                 <button
                                     key={idx}
                                     onClick={() => setSelectedImage(idx)}
-                                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-colors ${
                                         selectedImage === idx
                                             ? "border-primary"
-                                            : "border-transparent hover:border-gray-300"
+                                            : "border-transparent hover:border-secondary"
                                     }`}
                                 >
                                     <Image
@@ -219,17 +236,17 @@ function ProductDetailPage() {
 
                 <div className="space-y-6">
                     <div>
-                        <p className="text-sm text-muted-foreground mb-1">{product.category}</p>
+                        <p className="text-sm text-muted-foreground mb-1 font-medium">{product.category}</p>
                         <h1 className="text-3xl font-bold">{product.name}</h1>
                         <div className="flex items-center gap-4 mt-2">
                             <div className="flex">{renderStars(product.rating || 0)}</div>
                             <span className="text-sm text-muted-foreground">
-                                ({product.rating?.toFixed(1) || "Chưa"} đánh giá)
+                                ({product.rating?.toFixed(1) || "Chưa"} sao)
                             </span>
                         </div>
                     </div>
 
-                    <div className="text-2xl font-bold">${product.price.toFixed(2)}</div>
+                    <div className="text-3xl font-bold text-primary">{product.price.toFixed(0)} VNĐ</div>
 
                     <div className="flex items-center gap-2">
                         {product.inStock ? (
@@ -238,7 +255,7 @@ function ProductDetailPage() {
                                 <span className="text-green-600 font-medium">Còn Hàng</span>
                             </>
                         ) : (
-                            <span className="text-red-500 font-medium">Hết Hàng</span>
+                            <span className="text-destructive font-medium">Hết Hàng</span>
                         )}
                     </div>
 
@@ -248,24 +265,24 @@ function ProductDetailPage() {
                         <div className="space-y-4">
                             <div className="flex items-center gap-4">
                                 <span className="text-sm font-medium">Số lượng:</span>
-                                <div className="flex items-center border rounded-md">
+                                <div className="flex items-center border rounded-full bg-secondary/30">
                                     <button
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="p-2 hover:bg-gray-100 transition-colors"
+                                        className="p-3 hover:bg-secondary transition-colors rounded-l-full"
                                     >
                                         <Minus className="h-4 w-4" />
                                     </button>
-                                    <span className="w-12 text-center">{quantity}</span>
+                                    <span className="w-12 text-center font-semibold">{quantity}</span>
                                     <button
                                         onClick={() => setQuantity(quantity + 1)}
-                                        className="p-2 hover:bg-gray-100 transition-colors"
+                                        className="p-3 hover:bg-secondary transition-colors rounded-r-full"
                                     >
                                         <Plus className="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
 
-                            <Button onClick={handleAddToCart} className="w-full sm:w-auto" size="lg">
+                            <Button onClick={handleAddToCart} className="w-full sm:w-auto rounded-full" size="lg">
                                 <ShoppingCart className="h-5 w-5 mr-2" />
                                 Thêm Vào Giỏ
                             </Button>
@@ -273,8 +290,8 @@ function ProductDetailPage() {
                     )}
 
                     {!product.inStock && (
-                        <Button disabled className="w-full" size="lg">
-                            Hết Hàng
+                        <Button disabled className="w-full rounded-full" size="lg">
+                            Hết Hàng Rồi :(
                         </Button>
                     )}
                 </div>
@@ -286,16 +303,17 @@ function ProductDetailPage() {
 function NotFoundPage() {
     return (
         <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-12 space-y-6 text-center">
-            <h1 className="text-3xl font-bold">404 - Không Tìm Thấy Trang</h1>
+            <span className="text-6xl">🍪</span>
+            <h1 className="text-3xl font-bold">404 - Trang Không Tìm Thấy</h1>
             <p className="text-muted-foreground max-w-2xl">
-                Xin lỗi, chúng tôi không thể tìm thấy trang bạn đang tìm kiếm.
+                Ôi không! Trang này đi đâu mất rồi! 
             </p>
             <div className="flex justify-center space-x-4">
                 <Link to="/">
-                    <Button>Về Trang Chủ</Button>
+                    <Button className="rounded-full">Về Trang Chủ</Button>
                 </Link>
                 <Link to="/products">
-                    <Button variant="outline">Duyệt Sản Phẩm</Button>
+                    <Button variant="outline" className="rounded-full">Mua Kẹo Thôi</Button>
                 </Link>
             </div>
         </div>

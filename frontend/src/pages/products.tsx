@@ -24,28 +24,30 @@ export function ProductsPage() {
             if (sortBy === "price-low-high") return a.price - b.price;
             if (sortBy === "price-high-low") return b.price - a.price;
             if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
-            return 0; // featured/default
+            return 0;
         });
 
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Tìm kiếm sản phẩm..."
-                        value={searchQuery}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                        className="w-full max-w-xs"
-                    />
-                </div>
+                <h1 className="text-2xl font-bold">Danh Sách Kẹo & Snacks</h1>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Tìm kẹo ngon..."
+                            value={searchQuery}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                            className="pl-9 w-full sm:w-64 rounded-full"
+                        />
+                    </div>
 
-                <div className="flex flex-col sm:flex-row sm:space-x-3 w-full sm:w-auto">
                     <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">Danh mục:</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">Loại:</span>
                         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Tất Cả Danh Mục" />
+                            <SelectTrigger className="w-[140px] rounded-full">
+                                <SelectValue placeholder="Tất cả" />
                             </SelectTrigger>
                             <SelectContent>
                                 {categories.map((category) => (
@@ -58,28 +60,29 @@ export function ProductsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">Sắp xếp theo:</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">Sắp xếp:</span>
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Nổi Bật" />
+                            <SelectTrigger className="w-[140px] rounded-full">
+                                <SelectValue placeholder="Nổi bật" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="featured">Nổi Bật</SelectItem>
-                                <SelectItem value="price-low-high">Giá: Thấp đến Cao</SelectItem>
-                                <SelectItem value="price-high-low">Giá: Cao đến Thấp</SelectItem>
-                                <SelectItem value="rating">Đánh Giá: Cao đến Thấp</SelectItem>
+                                <SelectItem value="featured">Nổi bật</SelectItem>
+                                <SelectItem value="price-low-high">Giá: Thấp → Cao</SelectItem>
+                                <SelectItem value="price-high-low">Giá: Cao → Thấp</SelectItem>
+                                <SelectItem value="rating">Đánh giá</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredProducts.length > 0 ? (
                     filteredProducts.map((product: Product) => <ProductCard key={product.id} product={product} />)
                 ) : (
                     <div className="col-span-full text-center py-12">
-                        <p className="text-muted-foreground">Không tìm thấy sản phẩm nào phù hợp.</p>
+                        <p className="text-muted-foreground text-lg">Không tìm thấy món nào phù hợp!</p>
+                        <p className="text-sm text-muted-foreground mt-2">Thử tìm kiếm với từ khóa khác nhé</p>
                     </div>
                 )}
             </div>
