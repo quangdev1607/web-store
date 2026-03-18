@@ -302,7 +302,7 @@ function ProductDetailPage() {
 
                     {!product.inStock && (
                         <Button disabled className="w-full rounded-full" size="lg">
-                            Hết Hàng Rồi :(
+                            Hết Hàng
                         </Button>
                     )}
                 </div>

@@ -1,8 +1,8 @@
+import { formatPrice } from "@/components/shared/product-card";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatPrice } from "@/components/shared/product-card";
 import { useCart } from "@/hooks/use-cart";
 import { Check, CreditCard, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -180,7 +180,9 @@ export function CheckoutPage() {
                     <p className="text-center text-muted-foreground py-8">Giỏ kẹo còn trống lắm!</p>
                     <div className="text-center">
                         <Link to="/products">
-                            <Button variant="outline" className="rounded-full">Mua Kẹo Thôi!</Button>
+                            <Button variant="outline" className="rounded-full">
+                                Mua Kẹo Thôi!
+                            </Button>
                         </Link>
                     </div>
                 </div>
@@ -193,16 +195,20 @@ export function CheckoutPage() {
             <div className="max-w-2xl mx-auto text-center space-y-6">
                 <div className="border rounded-2xl p-12">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Check className="w-10 h-10 text-green-600" />
+                        <Check className="w-10 h-10 text-green-500" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2 text-primary">Đặt Hàng Thành Công! 🎉</h1>
+                    <h1 className="text-3xl font-bold mb-2 text-green-500">Đặt Hàng Thành Công! 🎉</h1>
                     <p className="text-muted-foreground mb-4">
-                        Cảm ơn ba/mẹ đã mua kẹo cho bé! Đơn hàng sẽ được giao nhanh nhất có thể!
+                        Cảm ơn ba/mẹ đã quan tâm đến bé! Đơn hàng sẽ được giao nhanh nhất có thể!
                     </p>
-                    <p className="text-sm text-muted-foreground mb-8">Mã đơn hàng: <span className="font-bold">#{orderId}</span></p>
+                    <p className="text-sm text-muted-foreground mb-8">
+                        Mã đơn hàng: <span className="font-bold">#{orderId}</span>
+                    </p>
                     <div className="flex justify-center space-x-4">
                         <Link to="/products">
-                            <Button variant="outline" className="rounded-full">Mua Thêm Kẹo</Button>
+                            <Button variant="outline" className="rounded-full">
+                                Mua Thêm
+                            </Button>
                         </Link>
                         <Link to="/">
                             <Button className="rounded-full">Về Trang Chủ</Button>
