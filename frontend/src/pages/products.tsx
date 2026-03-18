@@ -30,13 +30,13 @@ export function ProductsPage() {
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h1 className="text-2xl font-bold">Danh Sách Kẹo & Snacks</h1>
-                
+                <h1 className="text-2xl font-bold">Danh Sách Bánh & Kẹo</h1>
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Tìm kẹo ngon..."
+                            placeholder="Bé ăn gì nào..."
                             value={searchQuery}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                             className="pl-9 w-full sm:w-64 rounded-full"

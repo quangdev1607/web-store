@@ -8,6 +8,7 @@ import { ProductsPage } from "@/pages/products";
 import { ArrowLeft, CheckCircle, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import { useState } from "react";
 import { BrowserRouter, Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { formatPrice } from "./components/shared/product-card";
 
 function App() {
     return (
@@ -32,13 +33,27 @@ function HomePage() {
     return (
         <div className="space-y-8 text-center">
             <div className="space-y-4">
-                <h1 className="text-4xl font-bold text-primary">
-                    Chào Mừng Bé Đến Tiệm Kẹo! 🍬
-                </h1>
+                <h1 className="text-4xl font-bold text-primary-foreground">Chào Mừng Đến Với Tiệm Bánh Bé Yêu! 🍰</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-                    Khám phá thế giới kẹo ngọt và snacks vui vẻ dành cho các bé yêu!
-                    Đầy ắp những món ngon xinh xắn đang chờ đợi các bạn nhỏ đấy!
+                    Khám phá thế giới bánh kẹo hữu cơ và snacks lành tính dành riêng cho bé yêu! Đầy ắp những món ngon
+                    thuần khiết, giàu dinh dưỡng và vẹn tròn vị ngọt tự nhiên đang chờ đón các thiên thần nhỏ.
                 </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12">
+                {[
+                    { emoji: "🍭", label: "Kẹo" },
+                    { emoji: "🍰", label: "Bánh" },
+                    { emoji: "🥛", label: "Sữa" },
+                ].map((item) => (
+                    <div
+                        key={item.label}
+                        className="bg-secondary/50 rounded-2xl p-4 hover:bg-secondary transition-colors"
+                    >
+                        <span className="text-3xl">{item.emoji}</span>
+                        <p className="font-semibold mt-2">{item.label}</p>
+                    </div>
+                ))}
             </div>
             <div className="flex justify-center">
                 <Link to="/products">
@@ -50,18 +65,8 @@ function HomePage() {
                     </Button>
                 </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-                {[
-                    { emoji: '🍭', label: 'Kẹo' },
-                    { emoji: '🍪', label: 'Bánh quy' },
-                    { emoji: '🍫', label: 'Sô cô la' },
-                    { emoji: '🥤', label: 'Đồ uống' },
-                ].map((item) => (
-                    <div key={item.label} className="bg-secondary/30 rounded-2xl p-4 hover:bg-secondary/50 transition-colors">
-                        <span className="text-3xl">{item.emoji}</span>
-                        <p className="font-semibold mt-2">{item.label}</p>
-                    </div>
-                ))}
+            <div className="mt-12 rounded-2xl overflow-hidden">
+                <img src="/background.jpg" alt="Background" className="w-full h-auto object-cover" />
             </div>
         </div>
     );
@@ -76,10 +81,12 @@ function CartPage() {
             <div className="space-y-6">
                 <h1 className="text-2xl font-bold">Giỏ Kẹo Của Bé</h1>
                 <div className="border rounded-2xl p-6">
-                    <p className="text-center text-muted-foreground py-8">Giỏ kẹo còn trống lắm!</p>
+                    <p className="text-center text-muted-foreground py-8">Giỏ bánh còn trống lắm!</p>
                     <div className="text-center">
                         <Link to="/products">
-                            <Button variant="outline" className="rounded-full">Mua Kẹo Thôi!</Button>
+                            <Button variant="outline" className="rounded-full">
+                                Mua Bánh Thôi!
+                            </Button>
                         </Link>
                     </div>
                 </div>
@@ -89,7 +96,7 @@ function CartPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Giỏ Kẹo Của Bé ({totalItems} món)</h1>
+            <h1 className="text-2xl font-bold">Giỏ Bánh Của Bé ({totalItems} món)</h1>
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-4">
                     {items.map((item) => (
@@ -102,7 +109,9 @@ function CartPage() {
                             <div className="flex-1">
                                 <h3 className="font-medium">{item.product.name}</h3>
                                 <p className="text-muted-foreground text-sm">{item.product.category}</p>
-                                <p className="font-semibold mt-2 text-primary">{item.product.price.toFixed(0)} VNĐ</p>
+                                <p className="font-semibold mt-2 text-primary-foreground">
+                                    {formatPrice(item.product.price)}
+                                </p>
                             </div>
                             <div className="flex flex-col items-end justify-between">
                                 <button
@@ -134,7 +143,7 @@ function CartPage() {
                     <h2 className="font-semibold text-lg">Tổng Kết</h2>
                     <div className="flex justify-between">
                         <span>Tạm Tính</span>
-                        <span className="font-semibold">{totalPrice.toFixed(0)} VNĐ</span>
+                        <span className="font-semibold">{formatPrice(totalPrice)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>Giao Hàng</span>
@@ -142,7 +151,7 @@ function CartPage() {
                     </div>
                     <div className="border-t pt-4 flex justify-between font-bold text-lg">
                         <span>Tổng Cộng</span>
-                        <span className="text-primary">{totalPrice.toFixed(0)} VNĐ</span>
+                        <span className="text-primary-foreground">{formatPrice(totalPrice)}</span>
                     </div>
                     <Button className="w-full rounded-full" onClick={() => navigate("/checkout")}>
                         Thanh Toán Ngay
@@ -170,7 +179,9 @@ function ProductDetailPage() {
                     <p className="text-center text-muted-foreground py-8">Ồ! Sản phẩm này đi đâu mất rồi!</p>
                     <div className="text-center">
                         <Link to="/products">
-                            <Button variant="outline" className="rounded-full">Quay Lại</Button>
+                            <Button variant="outline" className="rounded-full">
+                                Quay Lại
+                            </Button>
                         </Link>
                     </div>
                 </div>
@@ -246,7 +257,7 @@ function ProductDetailPage() {
                         </div>
                     </div>
 
-                    <div className="text-3xl font-bold text-primary">{product.price.toFixed(0)} VNĐ</div>
+                    <div className="text-3xl font-bold text-primary-foreground">{formatPrice(product.price)}</div>
 
                     <div className="flex items-center gap-2">
                         {product.inStock ? (
@@ -305,15 +316,15 @@ function NotFoundPage() {
         <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-12 space-y-6 text-center">
             <span className="text-6xl">🍪</span>
             <h1 className="text-3xl font-bold">404 - Trang Không Tìm Thấy</h1>
-            <p className="text-muted-foreground max-w-2xl">
-                Ôi không! Trang này đi đâu mất rồi! 
-            </p>
+            <p className="text-muted-foreground max-w-2xl">Ôi không! Trang này đi đâu mất rồi!</p>
             <div className="flex justify-center space-x-4">
                 <Link to="/">
                     <Button className="rounded-full">Về Trang Chủ</Button>
                 </Link>
                 <Link to="/products">
-                    <Button variant="outline" className="rounded-full">Mua Kẹo Thôi</Button>
+                    <Button variant="outline" className="rounded-full">
+                        Mua Bánh Thôi
+                    </Button>
                 </Link>
             </div>
         </div>

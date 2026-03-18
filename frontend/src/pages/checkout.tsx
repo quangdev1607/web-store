@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatPrice } from "@/components/shared/product-card";
 import { useCart } from "@/hooks/use-cart";
 import { Check, CreditCard, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -366,7 +367,7 @@ export function CheckoutPage() {
                                             <p className="font-medium text-sm truncate">{item.product.name}</p>
                                             <p className="text-sm text-muted-foreground">SL: {item.quantity}</p>
                                             <p className="font-medium text-sm text-primary">
-                                                {(item.product.price * item.quantity).toFixed(0)} VNĐ
+                                                {formatPrice(item.product.price * item.quantity)}
                                             </p>
                                         </div>
                                     </div>
@@ -375,7 +376,7 @@ export function CheckoutPage() {
                             <div className="border-t pt-4 space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Tạm Tính</span>
-                                    <span className="font-medium">{totalPrice.toFixed(0)} VNĐ</span>
+                                    <span className="font-medium">{formatPrice(totalPrice)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground flex items-center gap-1">
@@ -386,7 +387,7 @@ export function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                                     <span>Tổng Cộng</span>
-                                    <span className="text-primary">{totalPrice.toFixed(0)} VNĐ</span>
+                                    <span className="text-primary">{formatPrice(totalPrice)}</span>
                                 </div>
                             </div>
                         </div>
@@ -401,7 +402,7 @@ export function CheckoutPage() {
                         )}
 
                         <Button type="submit" className="w-full rounded-full" size="lg" disabled={isSubmitting}>
-                            {isSubmitting ? "Đang xử lý..." : `Đặt Hàng Ngay - ${totalPrice.toFixed(0)} VNĐ`}
+                            {isSubmitting ? "Đang xử lý..." : `Đặt Hàng Ngay - ${formatPrice(totalPrice)}`}
                         </Button>
                     </div>
                 </div>
