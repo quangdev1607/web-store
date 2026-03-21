@@ -1,19 +1,20 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { useCart } from "@/hooks/use-cart";
-import type { Product } from "@/types";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Image } from '@/components/ui/image';
+import { formatPrice } from '@/lib/utils';
+import { useCart } from '@/hooks/use-cart';
+import type { Product } from '@/types';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface ProductCardProps {
-    product: Product;
+  product: Product;
 }
 
-export const formatPrice = (price: number): string => {
-    return price.toLocaleString("vi-VN") + " VNĐ";
-};
-
+/**
+ * ProductCard displays a single product in a card format
+ * Shows product image, name, description, price, rating, and add-to-cart button
+ */
 export function ProductCard({ product }: ProductCardProps) {
     const { addItem } = useCart();
     const [isAdded, setIsAdded] = useState(false);

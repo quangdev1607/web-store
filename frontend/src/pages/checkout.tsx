@@ -1,48 +1,69 @@
-import { formatPrice } from "@/components/shared/product-card";
-import { Button } from "@/components/ui/button";
-import { Image } from "@/components/ui/image";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCart } from "@/hooks/use-cart";
-import { Check, CreditCard, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Button } from '@/components/ui/button';
+import { Image } from '@/components/ui/image';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatPrice } from '@/lib/utils';
+import { useCart } from '@/hooks/use-cart';
+import { Check, CreditCard, Truck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+/** Vietnamese province data from API */
 interface Province {
-    code: number;
-    name: string;
+  code: number;
+  name: string;
 }
 
+/** Vietnamese district data from API */
 interface District {
-    code: number;
-    name: string;
+  code: number;
+  name: string;
 }
 
+/** Vietnamese ward data from API */
 interface Ward {
-    code: number;
-    name: string;
+  code: number;
+  name: string;
 }
 
+/** Checkout form data structure */
 interface FormData {
-    name: string;
-    phone: string;
-    email: string;
-    province: string;
-    district: string;
-    ward: string;
-    address: string;
+  name: string;
+  phone: string;
+  email: string;
+  province: string;
+  district: string;
+  ward: string;
+  address: string;
 }
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 const initialFormData: FormData = {
-    name: "",
-    phone: "",
-    email: "",
-    province: "",
-    district: "",
-    ward: "",
-    address: "",
+  name: '',
+  phone: '',
+  email: '',
+  province: '',
+  district: '',
+  ward: '',
+  address: '',
 };
 
+/**
+ * CheckoutPage - Order checkout and payment page
+ * 
+ * Features:
+ * - Contact information form with validation
+ * - Vietnam province/district/ward address selector (via external API)
+ * - Order summary with cart items
+ * - Order confirmation on successful submission
+ */
 export function CheckoutPage() {
     const { items, totalPrice, clearCart } = useCart();
     const [formData, setFormData] = useState<FormData>(initialFormData);
