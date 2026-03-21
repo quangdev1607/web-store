@@ -1,14 +1,24 @@
-import { useCart } from "@/hooks/use-cart";
-import { ShoppingCart } from "lucide-react";
-import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+/**
+ * Layout Component
+ * Main application wrapper that provides consistent header and main content area
+ * 
+ * Features:
+ * - Sticky header with navigation
+ * - Cart icon with item count badge
+ * - Responsive design
+ */
+import { useCart } from '@/hooks/use-cart';
+import { ShoppingCart } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 interface LayoutProps {
-    children: ReactNode;
+  /** Content to render in the main area */
+  children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-    const { totalItems } = useCart();
+  const { totalItems } = useCart();
 
     return (
         <div className="min-h-screen bg-background text-foreground">

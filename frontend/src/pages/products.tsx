@@ -1,10 +1,14 @@
-import { ProductCard } from "@/components/shared/product-card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockProducts } from "@/mocks/products";
-import type { Product } from "@/types";
-import { Search } from "lucide-react";
-import { useState } from "react";
+/**
+ * ProductsPage - Product listing page
+ * Displays all products with search, filter by category, and sort functionality
+ */
+import { ProductCard } from '@/components/shared/product-card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mockProducts } from '@/mocks/products';
+import type { Product } from '@/types';
+import { Search } from 'lucide-react';
+import { useState } from 'react';
 
 export function ProductsPage() {
     const [searchQuery, setSearchQuery] = useState("");
