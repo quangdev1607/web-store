@@ -65,6 +65,7 @@ app.UseCors();
 
 // Map endpoints
 app.MapProductEndpoints();
+app.MapCategoryEndpoints();
 app.MapOrderEndpoints();
 
 // Health check endpoint
