@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/TiemBanhBeYeu.Api.props" />
-</Project>
