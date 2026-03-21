@@ -1,0 +1,196 @@
+using Microsoft.EntityFrameworkCore;
+using TiemBanhBeYeu.Api.Domain.Entities;
+using TiemBanhBeYeu.Api.DTOs;
+using TiemBanhBeYeu.Api.DTOs.Orders;
+using TiemBanhBeYeu.Api.Infrastructure.Persistence;
+
+namespace TiemBanhBeYeu.Api.Extensions.Endpoints;
+
+public static class OrderEndpoints
+{
+    public static void MapOrderEndpoints(this WebApplication app)
+    {
+        var orders = app.MapGroup("/api/orders").WithTags("Orders");
+
+        // POST /api/orders - Create new order
+        orders.MapPost("/", CreateOrder)
+            .WithName("CreateOrder")
+            .Produces<ApiResponse<CreateOrderResponse>>()
+            .ProducesValidationProblem()
+            .ProducesProblem(400);
+
+        // GET /api/orders/{id} - Get order by ID
+        orders.MapGet("/{id:int}", GetOrderById)
+            .WithName("GetOrderById")
+            .Produces<ApiResponse<OrderDto>>()
+            .ProducesProblem(404);
+    }
+
+    private static async Task<IResult> CreateOrder(
+        CreateOrderRequest request,
+        AppDbContext db = null!,
+        CancellationToken ct = default)
+    {
+        // Validate request
+        if (string.IsNullOrWhiteSpace(request.CustomerInfo?.Name))
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Tên khách hàng không được trống")
+            ));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CustomerInfo?.Phone))
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Số điện thoại không được trống")
+            ));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CustomerInfo?.Email))
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Email không được trống")
+            ));
+        }
+
+        if (request.Items is null || request.Items.Count == 0)
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Đơn hàng phải có ít nhất 1 sản phẩm")
+            ));
+        }
+
+        // Get products and calculate total
+        var productIds = request.Items.Select(i => i.ProductId).ToList();
+        var products = await db.Products
+            .AsNoTracking()
+            .Where(p => productIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, ct);
+
+        if (products.Count != request.Items.Count)
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("PRODUCT_NOT_FOUND", "Một hoặc nhiều sản phẩm không tồn tại")
+            ));
+        }
+
+        decimal totalAmount = 0;
+        var orderItems = new List<OrderItem>();
+
+        foreach (var item in request.Items)
+        {
+            var product = products[item.ProductId];
+            var itemTotal = product.Price * item.Quantity;
+            totalAmount += itemTotal;
+
+            orderItems.Add(new OrderItem
+            {
+                ProductId = item.ProductId,
+                ProductName = product.Name,
+                ProductPrice = product.Price,
+                Quantity = item.Quantity
+            });
+        }
+
+        // Generate order code
+        var orderCode = GenerateOrderCode();
+
+        // Create order with simplified address (strings from frontend)
+        var order = new Order
+        {
+            OrderCode = orderCode,
+            CustomerName = request.CustomerInfo.Name,
+            CustomerPhone = request.CustomerInfo.Phone,
+            CustomerEmail = request.CustomerInfo.Email,
+            Province = request.ShippingAddress.Province,
+            District = request.ShippingAddress.District,
+            Ward = request.ShippingAddress.Ward,
+            Address = request.ShippingAddress.Address,
+            TotalAmount = totalAmount,
+            Status = OrderStatus.Pending,
+            Items = orderItems
+        };
+
+        db.Orders.Add(order);
+        await db.SaveChangesAsync(ct);
+
+        var response = new CreateOrderResponse(
+            OrderId: order.Id,
+            OrderCode: order.OrderCode,
+            TotalAmount: order.TotalAmount,
+            EstimatedDelivery: DateTime.UtcNow.AddDays(3)
+        );
+
+        return Results.Created($"/api/orders/{order.Id}", new ApiResponse<CreateOrderResponse>(
+            Success: true,
+            Data: response,
+            Message: "Đặt hàng thành công!"
+        ));
+    }
+
+    private static async Task<IResult> GetOrderById(
+        int id,
+        AppDbContext db = null!,
+        CancellationToken ct = default)
+    {
+        var order = await db.Orders
+            .AsNoTracking()
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
+
+        if (order is null)
+        {
+            return Results.NotFound(new ApiResponse<OrderDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("ORDER_NOT_FOUND", "Đơn hàng không tồn tại")
+            ));
+        }
+
+        var dto = new OrderDto(
+            order.Id,
+            order.OrderCode,
+            order.CustomerName,
+            order.CustomerPhone,
+            order.CustomerEmail,
+            new ShippingAddressDto(
+                order.Province,
+                order.District,
+                order.Ward,
+                order.Address
+            ),
+            order.TotalAmount,
+            order.Status.ToString().ToLower(),
+            order.CreatedAt,
+            order.Items.Select(i => new OrderItemDto(
+                i.ProductId,
+                i.ProductName,
+                i.ProductPrice,
+                i.Quantity
+            )).ToList()
+        );
+
+        return Results.Ok(new ApiResponse<OrderDto>(
+            Success: true,
+            Data: dto,
+            Message: "Lấy thông tin đơn hàng thành công"
+        ));
+    }
+
+    private static string GenerateOrderCode()
+    {
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var random = Random.Shared.Next(1000, 9999);
+        return $"ORD-{timestamp}-{random}";
+    }
+}
