@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TiemBanhBeYeu.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5f8069d2eb997d12643f085b46969d1c01f5371f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+22e20674a93d39707c557e06da0da75c3f554af7")]
 [assembly: System.Reflection.AssemblyProductAttribute("TiemBanhBeYeu.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TiemBanhBeYeu.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

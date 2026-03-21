@@ -12,7 +12,12 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
         builder.Property(c => c.Slug).IsRequired().HasMaxLength(100);
+        builder.Property(c => c.Description).HasMaxLength(500);
+        builder.Property(c => c.ImageUrl).HasMaxLength(500);
+        
         builder.HasIndex(c => c.Slug).IsUnique();
+        builder.HasIndex(c => c.IsActive);
+        builder.HasIndex(c => c.DeletedAt);
     }
 }
 
@@ -33,6 +38,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(p => p.Name);
         builder.HasIndex(p => p.CategoryId);
+        builder.HasIndex(p => p.IsActive);
+        builder.HasIndex(p => p.IsDeleted);
+        builder.HasIndex(p => p.DeletedAt);
+        builder.Ignore(p => p.InStock);
     }
 }
 
