@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TiemBanhBeYeu.Api.Domain.Entities;
 using TiemBanhBeYeu.Api.DTOs;
+using TiemBanhBeYeu.Api.DTOs.Admin;
 using TiemBanhBeYeu.Api.DTOs.Orders;
 using TiemBanhBeYeu.Api.Infrastructure.Persistence;
 
@@ -18,6 +20,12 @@ public static class OrderEndpoints
             .Produces<ApiResponse<CreateOrderResponse>>()
             .ProducesValidationProblem()
             .ProducesProblem(400);
+
+        // GET /api/orders - Get current user's orders
+        orders.MapGet("/", GetMyOrders)
+            .WithName("GetMyOrders")
+            .Produces<ApiResponse<PagedResponse<OrderSummaryDto>>>()
+            .ProducesProblem(401);
 
         // GET /api/orders/{id} - Get order by ID
         orders.MapGet("/{id:int}", GetOrderById)
@@ -185,6 +193,40 @@ public static class OrderEndpoints
             Data: dto,
             Message: "Lấy thông tin đơn hàng thành công"
         ));
+    }
+
+    private static async Task<IResult> GetMyOrders(
+        HttpContext httpContext,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        AppDbContext db = null!,
+        CancellationToken ct = default)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+
+        // Get all orders (for now - in production, filter by user email)
+        var query = db.Orders
+            .AsNoTracking()
+            .AsQueryable()
+            .OrderByDescending(o => o.CreatedAt);
+
+        var totalCount = await query.CountAsync(ct);
+        var orders = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(o => new OrderSummaryDto(
+                o.Id,
+                o.OrderCode,
+                o.CustomerName,
+                o.TotalAmount,
+                o.Status.ToString().ToLower(),
+                o.CreatedAt
+            ))
+            .ToListAsync(ct);
+
+        var pagedResponse = PagedResponse<OrderSummaryDto>.Create(orders, totalCount, page, pageSize);
+        return Results.Ok(new ApiResponse<PagedResponse<OrderSummaryDto>>(true, pagedResponse));
     }
 
     private static string GenerateOrderCode()

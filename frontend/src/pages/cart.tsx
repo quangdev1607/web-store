@@ -58,8 +58,9 @@ export function CartPage() {
               <div className="flex flex-col items-end justify-between">
                 {/* Remove button */}
                 <button
-                  onClick={() => removeItem(item.product.id)}
-                  className="text-destructive text-sm hover:underline"
+                  onClick={() => removeItem(Number(item.product.id))}
+                  type="button"
+                  className="text-destructive text-sm hover:underline bg-transparent border-none cursor-pointer"
                 >
                   Xóa
                 </button>
@@ -67,15 +68,17 @@ export function CartPage() {
                 {/* Quantity controls */}
                 <div className="flex items-center gap-2 bg-secondary/30 rounded-full px-2">
                   <button
-                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                    className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center"
+                    onClick={() => updateQuantity(Number(item.product.id), item.quantity - 1)}
+                    type="button"
+                    className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center bg-transparent border-none cursor-pointer"
                   >
                     -
                   </button>
                   <span className="w-8 text-center font-semibold">{item.quantity}</span>
                   <button
-                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                    className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center"
+                    onClick={() => updateQuantity(Number(item.product.id), item.quantity + 1)}
+                    type="button"
+                    className="w-8 h-8 rounded-full hover:bg-secondary transition-colors flex items-center justify-center bg-transparent border-none cursor-pointer"
                   >
                     +
                   </button>

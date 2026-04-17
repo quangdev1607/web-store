@@ -5,28 +5,48 @@
 import { ProductCard } from '@/components/shared/product-card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockProducts } from '@/mocks/products';
-import type { Product } from '@/types';
+import { getProducts, getProductCategories } from '@/api/products';
+import type { Product, ProductFilters } from '@/types';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function ProductsPage() {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("Tất cả");
     const [sortBy, setSortBy] = useState<string>("featured");
+    const [loading, setLoading] = useState(true);
 
-    const categories = ["Tất cả", ...Array.from(new Set(mockProducts.map((p: Product) => p.category)))];
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [productsRes, categoriesRes] = await Promise.all([
+                    getProducts(),
+                    getProductCategories()
+                ]);
+                setProducts(productsRes.items);
+                setCategories(["Tất cả", ...categoriesRes]);
+            } catch (err) {
+                console.error('Failed to fetch products:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
-    const filteredProducts = mockProducts
+    const filteredProducts = products
         .filter(
             (product: Product) =>
                 product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                product.description.toLowerCase().includes(searchQuery.toLowerCase()),
+                (product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false),
         )
         .filter((product: Product) => selectedCategory === "Tất cả" || product.category === selectedCategory)
         .sort((a: Product, b: Product) => {
-            if (sortBy === "price-low-high") return a.price - b.price;
-            if (sortBy === "price-high-low") return b.price - a.price;
+            if (sortBy === "price-low-high") return (a.price || 0) - (b.price || 0);
+            if (sortBy === "price-high-low") return (b.price || 0) - (a.price || 0);
             if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
             return 0;
         });
@@ -81,7 +101,11 @@ export function ProductsPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredProducts.length > 0 ? (
+                {loading ? (
+                    <div className="col-span-full text-center py-12">
+                        <p className="text-muted-foreground">Đang tải sản phẩm...</p>
+                    </div>
+                ) : filteredProducts.length > 0 ? (
                     filteredProducts.map((product: Product) => <ProductCard key={product.id} product={product} />)
                 ) : (
                     <div className="col-span-full text-center py-12">

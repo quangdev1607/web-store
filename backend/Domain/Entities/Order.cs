@@ -4,6 +4,7 @@ public class Order
 {
     public int Id { get; set; }
     public string OrderCode { get; set; } = string.Empty;
+    public int? UserId { get; set; }  // Liên kết với user đã đăng nhập (nullable cho guest orders)
     
     // Customer Info
     public string CustomerName { get; set; } = string.Empty;

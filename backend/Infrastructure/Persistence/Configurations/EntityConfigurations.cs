@@ -85,6 +85,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.OrderCode).IsUnique();
         builder.HasIndex(o => o.CustomerEmail);
         builder.HasIndex(o => o.Status);
+        builder.HasIndex(o => o.UserId);
     }
 }
 
@@ -108,5 +109,66 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(oi => oi.OrderId);
+    }
+}
+
+public class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.ToTable("Users");
+        builder.HasKey(u => u.Id);
+        builder.Property(u => u.Email).IsRequired().HasMaxLength(100);
+        builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(256);
+        builder.Property(u => u.FirstName).IsRequired().HasMaxLength(50);
+        builder.Property(u => u.LastName).IsRequired().HasMaxLength(50);
+        builder.Property(u => u.Phone).HasMaxLength(20);
+        builder.Property(u => u.Address).HasMaxLength(500);
+        builder.Property(u => u.Province).HasMaxLength(100);
+        builder.Property(u => u.District).HasMaxLength(100);
+        builder.Property(u => u.Ward).HasMaxLength(100);
+        builder.Property(u => u.Roles).HasMaxLength(100);
+
+        builder.HasIndex(u => u.Email).IsUnique();
+        builder.HasIndex(u => u.IsActive);
+    }
+}
+
+public class CartConfiguration : IEntityTypeConfiguration<Cart>
+{
+    public void Configure(EntityTypeBuilder<Cart> builder)
+    {
+        builder.ToTable("Carts");
+        builder.HasKey(c => c.Id);
+        
+        builder.HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(c => c.UserId).IsUnique();
+    }
+}
+
+public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
+{
+    public void Configure(EntityTypeBuilder<CartItem> builder)
+    {
+        builder.ToTable("CartItems");
+        builder.HasKey(ci => ci.Id);
+        builder.Property(ci => ci.Quantity).IsRequired();
+
+        builder.HasOne(ci => ci.Cart)
+            .WithMany(c => c.Items)
+            .HasForeignKey(ci => ci.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(ci => ci.Product)
+            .WithMany()
+            .HasForeignKey(ci => ci.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(ci => ci.CartId);
+        builder.HasIndex(ci => new { ci.CartId, ci.ProductId }).IsUnique();
     }
 }

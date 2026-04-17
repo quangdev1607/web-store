@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using TiemBanhBeYeu.Api.Domain.Entities;
+using TiemBanhBeYeu.Api.Infrastructure.Services;
 
 namespace TiemBanhBeYeu.Api.Infrastructure.Persistence;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(AppDbContext context)
+    public static async Task SeedAsync(AppDbContext context, IPasswordHasher? passwordHasher = null)
     {
         // Ensure database is created
         await context.Database.EnsureCreatedAsync();
@@ -148,6 +149,23 @@ public static class DbSeeder
             };
 
             context.Products.AddRange(products);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed admin user if no users exist
+        if (!await context.Users.AnyAsync() && passwordHasher != null)
+        {
+            var adminUser = new User
+            {
+                Email = "admin@tiembanh.com",
+                PasswordHash = passwordHasher.HashPassword("admin123"),
+                FirstName = "Admin",
+                LastName = "User",
+                Roles = "Admin",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            context.Users.Add(adminUser);
             await context.SaveChangesAsync();
         }
     }
