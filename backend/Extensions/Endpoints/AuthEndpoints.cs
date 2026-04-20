@@ -87,8 +87,9 @@ public static class AuthEndpoints
             Phone = request.Phone?.Trim(),
             Address = request.Address?.Trim(),
             Province = request.Province?.Trim() ?? string.Empty,
-            District = request.District?.Trim() ?? string.Empty,
+            ProvinceName = request.ProvinceName?.Trim(),
             Ward = request.Ward?.Trim() ?? string.Empty,
+            WardName = request.WardName?.Trim(),
             Roles = "User",
             CreatedAt = DateTime.UtcNow,
             IsActive = true
@@ -109,8 +110,9 @@ public static class AuthEndpoints
             user.Phone,
             user.Address,
             user.Province,
-            user.District,
-            user.Ward
+            user.ProvinceName,
+            user.Ward,
+            user.WardName
         );
 
         return Results.Created($"/api/auth/me", new ApiResponse<AuthResponse>(true, response, "Registration successful"));
@@ -154,8 +156,9 @@ public static class AuthEndpoints
             user.Phone,
             user.Address,
             user.Province,
-            user.District,
-            user.Ward
+            user.ProvinceName,
+            user.Ward,
+            user.WardName
         );
 
         return Results.Ok(new ApiResponse<AuthResponse>(true, response, "Login successful"));
@@ -191,8 +194,9 @@ public static class AuthEndpoints
             user.Phone,
             user.Address,
             user.Province,
-            user.District,
+            user.ProvinceName,
             user.Ward,
+            user.WardName,
             user.CreatedAt
         );
 
@@ -235,11 +239,14 @@ public static class AuthEndpoints
         if (request.Province is not null)
             user.Province = request.Province.Trim();
         
-        if (request.District is not null)
-            user.District = request.District.Trim();
+        if (request.ProvinceName is not null)
+            user.ProvinceName = request.ProvinceName.Trim();
         
         if (request.Ward is not null)
             user.Ward = request.Ward.Trim();
+        
+        if (request.WardName is not null)
+            user.WardName = request.WardName.Trim();
 
         await db.SaveChangesAsync(ct);
 
@@ -252,8 +259,9 @@ public static class AuthEndpoints
             user.Phone,
             user.Address,
             user.Province,
-            user.District,
+            user.ProvinceName,
             user.Ward,
+            user.WardName,
             user.CreatedAt
         );
 

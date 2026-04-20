@@ -136,7 +136,6 @@ public static class OrderEndpoints
             CustomerPhone = request.CustomerInfo.Phone,
             CustomerEmail = request.CustomerInfo.Email,
             Province = request.ShippingAddress.Province,
-            District = request.ShippingAddress.District,
             Ward = request.ShippingAddress.Ward,
             Address = request.ShippingAddress.Address,
             TotalAmount = totalAmount,
@@ -188,7 +187,6 @@ public static class OrderEndpoints
             order.CustomerEmail,
             new ShippingAddressDto(
                 order.Province,
-                order.District,
                 order.Ward,
                 order.Address
             ),
@@ -212,19 +210,44 @@ public static class OrderEndpoints
 
     private static async Task<IResult> GetMyOrders(
         HttpContext httpContext,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        int page = 1,
+        int pageSize = 20,
         AppDbContext db = null!,
         CancellationToken ct = default)
     {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
 
-        // Get all orders (for now - in production, filter by user email)
         var query = db.Orders
             .AsNoTracking()
-            .AsQueryable()
-            .OrderByDescending(o => o.CreatedAt);
+            .AsQueryable();
+
+        // Filter by status
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, true, out var orderStatus))
+        {
+            query = query.Where(o => o.Status == orderStatus);
+        }
+
+        // Search by order code, customer name, or email
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(o =>
+                o.OrderCode.Contains(search) ||
+                o.CustomerName.Contains(search) ||
+                o.CustomerEmail.Contains(search));
+        }
+
+        // Apply sorting
+        query = sortBy?.ToLower() switch
+        {
+            "date-asc" => query.OrderBy(o => o.CreatedAt),
+            "date-desc" => query.OrderByDescending(o => o.CreatedAt),
+            _ => query.OrderByDescending(o => o.CreatedAt)
+        };
 
         var totalCount = await query.CountAsync(ct);
         var orders = await query

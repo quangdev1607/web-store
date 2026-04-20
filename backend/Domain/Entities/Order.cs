@@ -13,7 +13,6 @@ public class Order
     
     // Shipping Address (simple strings from frontend)
     public string Province { get; set; } = string.Empty;
-    public string District { get; set; } = string.Empty;
     public string Ward { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     

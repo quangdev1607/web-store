@@ -70,6 +70,7 @@ export interface CategoryFilters {
 export interface OrderFilters {
   status?: string;
   search?: string;
+  sortBy?: string;
   page?: number;
   pageSize?: number;
 }

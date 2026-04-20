@@ -94,16 +94,12 @@ public static class ProductEndpoints
             .Include(p => p.Category)
             .Where(p => !p.IsDeleted);
 
-        // Only show active products in public API by default
+        // Filter by IsActive if specified
         if (isActive.HasValue)
         {
             query = query.Where(p => p.IsActive == isActive.Value);
         }
-        else
-        {
-            // Default: show only active products to public
-            query = query.Where(p => p.IsActive);
-        }
+        // Default: show all products (both active and inactive)
 
         var allProducts = await query.ToListAsync(ct);
 

@@ -9,9 +9,10 @@ public class User
     public string LastName { get; set; } = string.Empty;
     public string? Phone { get; set; }      // Số điện thoại - cho user
     public string? Address { get; set; }    // Địa chỉ - cho user
-    public string Province { get; set; } = string.Empty;   // Tỉnh/TP - cho user
-    public string District { get; set; } = string.Empty; // Quận/Huyện - cho user
-    public string Ward { get; set; } = string.Empty;      // Phường/Xã - cho user
+    public string Province { get; set; } = string.Empty;   // Tỉnh/TP code - cho user
+    public string? ProvinceName { get; set; }   // Tỉnh/TP name - cho user
+    public string Ward { get; set; } = string.Empty;      // Phường/Xã code - cho user
+    public string? WardName { get; set; }      // Phường/Xã name - cho user
     public string Roles { get; set; } = "User"; // Stored as comma-separated string
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;

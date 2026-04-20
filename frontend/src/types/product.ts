@@ -15,17 +15,17 @@ export interface Product {
   /** Product category (e.g., "Kẹo", "Bánh", "Đồ uống") */
   category: string;
   /** Category ID from backend */
-  categoryId?: number;
+  categoryId: number;
   /** Array of image URLs */
   images: string[];
   /** Whether the product is currently in stock */
   inStock: boolean;
   /** Whether product is active */
-  isActive?: boolean;
+  isActive: boolean;
   /** Average customer rating (0-5 stars) */
   rating?: number;
   /** Stock quantity available */
-  stockQuantity?: number;
+  stockQuantity: number;
   /** Creation timestamp */
   createdAt?: string;
   /** Last update timestamp */

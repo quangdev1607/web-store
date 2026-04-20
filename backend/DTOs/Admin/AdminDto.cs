@@ -29,6 +29,7 @@ public record ProductManagementDto(
     string Name,
     string Description,
     string CategoryName,
+    int CategoryId,
     decimal Price,
     List<string> Images,
     int StockQuantity,
@@ -55,9 +56,26 @@ public record UserManagementDto(
     string? Phone,
     string? Address,
     string? Province,
-    string? District,
+    string? ProvinceName,
     string? Ward,
+    string? WardName,
     List<string> Roles,
     bool IsActive,
     DateTime CreatedAt
+);
+
+public record UpdateUserRequest(
+    string FirstName,
+    string LastName,
+    string? Phone,
+    string? Address,
+    string? Province,
+    string? ProvinceName,
+    string? Ward,
+    string? WardName,
+    List<string>? Roles
+);
+
+public record UpdateUserPasswordRequest(
+    string NewPassword
 );

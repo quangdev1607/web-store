@@ -62,13 +62,11 @@ export function formatPhone(phone: string): string {
 export function formatAddress(address: {
   address?: string;
   ward?: string;
-  district?: string;
   province?: string;
 }): string {
   const parts = [
     address.address,
     address.ward,
-    address.district,
     address.province,
   ].filter(Boolean);
 

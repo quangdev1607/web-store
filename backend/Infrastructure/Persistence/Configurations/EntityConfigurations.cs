@@ -75,7 +75,6 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         
         // Address fields
         builder.Property(o => o.Province).IsRequired().HasMaxLength(100);
-        builder.Property(o => o.District).IsRequired().HasMaxLength(100);
         builder.Property(o => o.Ward).IsRequired().HasMaxLength(100);
         builder.Property(o => o.Address).IsRequired().HasMaxLength(500);
         
@@ -125,8 +124,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Phone).HasMaxLength(20);
         builder.Property(u => u.Address).HasMaxLength(500);
         builder.Property(u => u.Province).HasMaxLength(100);
-        builder.Property(u => u.District).HasMaxLength(100);
+        builder.Property(u => u.ProvinceName).HasMaxLength(200);
         builder.Property(u => u.Ward).HasMaxLength(100);
+        builder.Property(u => u.WardName).HasMaxLength(200);
         builder.Property(u => u.Roles).HasMaxLength(100);
 
         builder.HasIndex(u => u.Email).IsUnique();
@@ -170,5 +170,46 @@ public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
 
         builder.HasIndex(ci => ci.CartId);
         builder.HasIndex(ci => new { ci.CartId, ci.ProductId }).IsUnique();
+    }
+}
+
+public class ProvinceConfiguration : IEntityTypeConfiguration<Province>
+{
+    public void Configure(EntityTypeBuilder<Province> builder)
+    {
+        builder.ToTable("Provinces");
+        builder.HasKey(p => p.Id);
+        
+        // Use value generated never so we can assign Id = Code from JSON
+        builder.Property(p => p.Id).ValueGeneratedNever();
+        
+        builder.Property(p => p.Name).IsRequired().HasMaxLength(100);
+        builder.Property(p => p.DivisionType).IsRequired().HasMaxLength(50);
+        builder.Property(p => p.CodeName).IsRequired().HasMaxLength(100);
+        builder.Property(p => p.PhoneCode).IsRequired();
+    }
+}
+
+public class WardConfiguration : IEntityTypeConfiguration<Ward>
+{
+    public void Configure(EntityTypeBuilder<Ward> builder)
+    {
+        builder.ToTable("Wards");
+        builder.HasKey(w => w.Id);
+        
+        // ProvinceCode references Province.Id (which equals province_code from JSON)
+        builder.HasOne(w => w.Province)
+            .WithMany(p => p.Wards)
+            .HasForeignKey(w => w.ProvinceCode)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Property(w => w.Name).IsRequired().HasMaxLength(100);
+        builder.Property(w => w.Code).IsRequired();
+        builder.Property(w => w.DivisionType).IsRequired().HasMaxLength(50);
+        builder.Property(w => w.CodeName).IsRequired().HasMaxLength(100);
+        builder.Property(w => w.ProvinceCode).IsRequired();
+
+        builder.HasIndex(w => w.Code).IsUnique();
+        builder.HasIndex(w => w.ProvinceCode);
     }
 }

@@ -16,6 +16,9 @@ import type {
   PaginatedCategories,
   CategoryFilters,
   User,
+  UserFilters,
+  UpdateUserRequest,
+  UpdateUserPasswordRequest,
 } from '@/types';
 
 /**
@@ -36,9 +39,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getAdminOrders(
   filters?: OrderFilters
 ): Promise<PaginatedOrders> {
+  // Filter out empty values to ensure API receives valid params
+  const params: Record<string, string | number> = {};
+  if (filters?.status) params.status = filters.status;
+  if (filters?.search) params.search = filters.search;
+  if (filters?.sortBy) params.sortBy = filters.sortBy;
+  if (filters?.page) params.page = filters.page;
+  if (filters?.pageSize) params.pageSize = filters.pageSize;
+
   const response = await axios.get<ApiResponse<PaginatedOrders>>(
     '/admin/orders',
-    { params: filters }
+    { params }
   );
   return response.data.data;
 }
@@ -91,8 +102,7 @@ export async function getAdminCategories(
  * GET /api/admin/users
  */
 export async function getAdminUsers(
-  page = 1,
-  pageSize = 20
+  filters?: UserFilters
 ): Promise<{
   items: User[];
   page: number;
@@ -100,6 +110,13 @@ export async function getAdminUsers(
   totalCount: number;
   totalPages: number;
 }> {
+  const params: Record<string, string | number> = {};
+  if (filters?.search) params.search = filters.search;
+  if (filters?.isActive !== undefined) params.isActive = filters.isActive ? 1 : 0;
+  if (filters?.role) params.role = filters.role;
+  if (filters?.page) params.page = filters.page;
+  if (filters?.pageSize) params.pageSize = filters.pageSize;
+
   const response = await axios.get<
     ApiResponse<{
       items: User[];
@@ -108,9 +125,68 @@ export async function getAdminUsers(
       totalCount: number;
       totalPages: number;
     }>
-  >('/admin/users', {
-    params: { page, pageSize },
-  });
+  >('/admin/users', { params });
+  return response.data.data;
+}
+
+/**
+ * Get user by ID
+ * GET /api/admin/users/{id}
+ */
+export async function getAdminUserById(id: number): Promise<User> {
+  const response = await axios.get<ApiResponse<User>>(`/admin/users/${id}`);
+  return response.data.data;
+}
+
+/**
+ * Update user
+ * PUT /api/admin/users/{id}
+ */
+export async function updateAdminUser(
+  id: number,
+  data: UpdateUserRequest
+): Promise<User> {
+  const response = await axios.put<ApiResponse<User>>(
+    `/admin/users/${id}`,
+    data
+  );
+  return response.data.data;
+}
+
+/**
+ * Update user password
+ * PATCH /api/admin/users/{id}/password
+ */
+export async function updateAdminUserPassword(
+  id: number,
+  data: UpdateUserPasswordRequest
+): Promise<User> {
+  const response = await axios.patch<ApiResponse<User>>(
+    `/admin/users/${id}/password`,
+    data
+  );
+  return response.data.data;
+}
+
+/**
+ * Toggle user status (activate/deactivate)
+ * PATCH /api/admin/users/{id}/status
+ */
+export async function toggleAdminUserStatus(id: number): Promise<User> {
+  const response = await axios.patch<ApiResponse<User>>(
+    `/admin/users/${id}/status`
+  );
+  return response.data.data;
+}
+
+/**
+ * Delete user
+ * DELETE /api/admin/users/{id}
+ */
+export async function deleteAdminUser(id: number): Promise<User> {
+  const response = await axios.delete<ApiResponse<User>>(
+    `/admin/users/${id}`
+  );
   return response.data.data;
 }
 

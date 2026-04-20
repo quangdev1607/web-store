@@ -6,6 +6,9 @@ export type {
   LoginRequest,
   UpdateProfileRequest,
   UserRole,
+  UserFilters,
+  UpdateUserRequest,
+  UpdateUserPasswordRequest,
   hasRole,
   isAdmin,
 } from './user';

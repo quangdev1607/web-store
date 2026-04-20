@@ -16,7 +16,6 @@ public record CustomerInfo(
 // Shipping address - simple strings from frontend (frontend calls external API)
 public record ShippingAddress(
     string Province,
-    string District,
     string Ward,
     string Address
 );
@@ -42,7 +41,6 @@ public record OrderDto(
 
 public record ShippingAddressDto(
     string Province,
-    string District,
     string Ward,
     string Address
 );

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TiemBanhBeYeu.Api.Domain.Entities;
 using TiemBanhBeYeu.Api.Infrastructure.Services;
@@ -6,6 +7,11 @@ namespace TiemBanhBeYeu.Api.Infrastructure.Persistence;
 
 public static class DbSeeder
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public static async Task SeedAsync(AppDbContext context, IPasswordHasher? passwordHasher = null)
     {
         // Ensure database is created
@@ -168,5 +174,59 @@ public static class DbSeeder
             context.Users.Add(adminUser);
             await context.SaveChangesAsync();
         }
+
+        // Seed provinces if empty
+        if (!await context.Provinces.AnyAsync())
+        {
+            var provincesPath = Path.Combine(AppContext.BaseDirectory, "Data", "provinces.json");
+            if (File.Exists(provincesPath))
+            {
+                var json = await File.ReadAllTextAsync(provincesPath);
+                var provincesData = JsonSerializer.Deserialize<List<ProvinceJson>>(json, JsonOptions);
+                if (provincesData != null)
+                {
+                    var provinces = provincesData.Select(p => new Province
+                    {
+                        Id = p.code,  // Use code as PK (matches province_code from JSON)
+                        Name = p.name,
+                        DivisionType = p.division_type,
+                        CodeName = p.codename,
+                        PhoneCode = p.phone_code
+                    }).ToList();
+                    context.Provinces.AddRange(provinces);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"Seeded {provinces.Count} provinces");
+                }
+            }
+        }
+
+        // Seed wards if empty
+        if (!await context.Wards.AnyAsync())
+        {
+            var wardsPath = Path.Combine(AppContext.BaseDirectory, "Data", "wards.json");
+            if (File.Exists(wardsPath))
+            {
+                var json = await File.ReadAllTextAsync(wardsPath);
+                var wardsData = JsonSerializer.Deserialize<List<WardJson>>(json, JsonOptions);
+                if (wardsData != null)
+                {
+                    var wards = wardsData.Select(w => new Ward
+                    {
+                        Name = w.name,
+                        Code = w.code,
+                        DivisionType = w.division_type,
+                        CodeName = w.codename,
+                        ProvinceCode = w.province_code
+                    }).ToList();
+                    context.Wards.AddRange(wards);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"Seeded {wards.Count} wards");
+                }
+            }
+        }
     }
+
+    // JSON DTOs for deserialization (snake_case from JSON)
+    private record ProvinceJson(string name, int code, string division_type, string codename, int phone_code);
+    private record WardJson(string name, int code, string division_type, string codename, int province_code);
 }

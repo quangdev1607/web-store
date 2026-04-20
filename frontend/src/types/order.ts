@@ -18,7 +18,6 @@ export type OrderStatus =
  */
 export interface ShippingAddress {
   province: string;
-  district: string;
   ward: string;
   address: string;
 }
@@ -117,5 +116,6 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
  * Get display label for order status
  */
 export function getOrderStatusLabel(status: OrderStatus): string {
-  return ORDER_STATUS_LABELS[status] || status;
+  const lowerStatus = status.toLowerCase();
+  return ORDER_STATUS_LABELS[lowerStatus as OrderStatus] || status;
 }

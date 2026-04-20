@@ -63,14 +63,13 @@ export function CheckoutPage() {
   const userAddress = user
     ? {
         address: user.address || '',
-        ward: user.ward || '',
-        district: user.district || '',
-        province: user.province || '',
+        ward: user.wardName || user.ward || '',
+        province: user.provinceName || user.province || '',
       }
     : null;
 
   const fullAddress = userAddress?.province
-    ? `${userAddress.address}, ${userAddress.ward}, ${userAddress.district}, ${userAddress.province}`
+    ? `${userAddress.address}, ${userAddress.ward}, ${userAddress.province}`
     : '';
 
   const validateForm = (): boolean => {
@@ -93,12 +92,12 @@ export function CheckoutPage() {
     }
 
     // Check if user has address
-    if (!userAddress?.province || !userAddress?.district) {
+    if (!userAddress?.province || !userAddress?.ward) {
       setApiError('Vui lòng cập nhật địa chỉ giao hàng trong trang thông tin tài khoản');
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0 && !!userAddress?.province && !!userAddress?.district;
+    return Object.keys(newErrors).length === 0 && !!userAddress?.province && !!userAddress?.ward;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,7 +120,6 @@ export function CheckoutPage() {
         },
         shippingAddress: {
           province: userAddress!.province,
-          district: userAddress!.district,
           ward: userAddress!.ward,
           address: userAddress!.address,
         },

@@ -5,12 +5,17 @@
 import {
     createCategory,
     createProduct,
+    deleteAdminUser,
     deleteCategory,
     deleteProduct,
     getAdminCategories,
     getAdminOrders,
     getAdminProducts,
+    getAdminUsers,
     getDashboardStats,
+    toggleAdminUserStatus,
+    updateAdminUser,
+    updateAdminUserPassword,
     updateCategory,
     updateOrderStatus,
     updateProduct,
@@ -35,9 +40,12 @@ import type {
     PaginatedOrders,
     Product,
     ProductFilters,
+    UpdateUserRequest,
+    User,
+    UserFilters,
 } from "@/types";
 import { getOrderStatusLabel } from "@/types/order";
-import { PencilIcon, PlusIcon, RotateCcwIcon, TrashIcon } from "lucide-react";
+import { KeyRound, PencilIcon, PlusIcon, RotateCcwIcon, ShieldBan, ShieldCheck, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -75,17 +83,21 @@ const DEFAULT_STATS: DashboardStats = {
     recentOrders: [],
 };
 
-type TabType = "dashboard" | "orders" | "products" | "categories";
+type TabType = "dashboard" | "orders" | "products" | "categories" | "users";
 
 export function AdminPage() {
     const { user, isAuthenticated } = useAuthStore();
     const [activeTab, setActiveTab] = useState<TabType>("dashboard");
     const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [orderFilters, setOrderFilters] = useState<OrderFilters>({
         page: 1,
-        pageSize: 20,
+        pageSize: 10,
+        status: "",
+        search: "",
+        sortBy: "date-desc",
     });
     const [, setStatsError] = useState<string | null>(null);
     const [, setOrdersError] = useState<string | null>(null);
@@ -110,6 +122,7 @@ export function AdminPage() {
             setOrdersError(null);
             const data: PaginatedOrders = await getAdminOrders(orderFilters);
             setOrders(data.items);
+            setTotalPages(data.totalPages);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
             setOrdersError("Không thể tải danh sách đơn hàng");
@@ -155,6 +168,7 @@ export function AdminPage() {
         { id: "orders", label: "Đơn hàng" },
         { id: "products", label: "Sản phẩm" },
         { id: "categories", label: "Danh mục" },
+        { id: "users", label: "Người dùng" },
     ] as const;
 
     return (
@@ -195,7 +209,14 @@ export function AdminPage() {
 
             {/* Orders Tab */}
             {activeTab === "orders" && (
-                <OrdersContent orders={orders} isLoading={isLoading} onStatusChange={handleStatusChange} />
+                <OrdersContent
+                    orders={orders}
+                    isLoading={isLoading}
+                    onStatusChange={handleStatusChange}
+                    filters={orderFilters}
+                    setFilters={setOrderFilters}
+                    totalPages={totalPages}
+                />
             )}
 
             {/* Products Tab */}
@@ -203,6 +224,9 @@ export function AdminPage() {
 
             {/* Categories Tab */}
             {activeTab === "categories" && <CategoriesContent />}
+
+            {/* Users Tab */}
+            {activeTab === "users" && <UsersContent />}
         </div>
     );
 }
@@ -254,15 +278,109 @@ function OrdersContent({
     orders,
     isLoading,
     onStatusChange,
+    filters,
+    setFilters,
+    totalPages,
 }: {
     orders: Order[];
     isLoading: boolean;
     onStatusChange: (orderId: number, status: OrderStatus) => Promise<void>;
+    filters: OrderFilters;
+    setFilters: React.Dispatch<React.SetStateAction<OrderFilters>>;
+    totalPages: number;
 }) {
+    const [pendingStatusChange, setPendingStatusChange] = useState<{
+        orderId: number;
+        status: OrderStatus;
+    } | null>(null);
+    // Track locally confirmed orders - helpful while waiting for fetch to complete
+    const [confirmedOrderIds, setConfirmedOrderIds] = useState<Set<number>>(new Set());
+
+    const isOrderCompleted = (order: Order) => {
+        return (
+            order.status.toLowerCase() === "delivered" ||
+            order.status.toLowerCase() === "cancelled" ||
+            confirmedOrderIds.has(Number(order.id))
+        );
+    };
+
+    const handleStatusChange = (orderId: number, newStatus: OrderStatus) => {
+        // Show confirmation popup for delivered or cancelled
+        if (newStatus === "delivered" || newStatus === "cancelled") {
+            setPendingStatusChange({ orderId, status: newStatus });
+        } else {
+            onStatusChange(orderId, newStatus);
+        }
+    };
+
+    const handleConfirmStatusChange = async () => {
+        if (pendingStatusChange) {
+            // Add to confirmed list immediately for UI feedback
+            setConfirmedOrderIds((prev) => new Set(prev).add(pendingStatusChange.orderId));
+            await onStatusChange(pendingStatusChange.orderId, pendingStatusChange.status);
+            setPendingStatusChange(null);
+        }
+    };
+
+    const handleCancelStatusChange = () => {
+        setPendingStatusChange(null);
+    };
+
+    const handleFilterChange = (key: keyof OrderFilters, value: string) => {
+        setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setFilters((prev) => ({ ...prev, page: newPage }));
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Quản lý đơn hàng</h2>
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-2">
+                {/* Search */}
+                <Input
+                    placeholder="Tìm kiếm theo mã, tên, sđt..."
+                    value={filters.search || ""}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className="max-w-xs"
+                />
+
+                {/* Status Filter */}
+                <Select
+                    value={filters.status || "all"}
+                    onValueChange={(value) => handleFilterChange("status", value === "all" ? "" : value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ xác nhận</SelectItem>
+                        <SelectItem value="confirmed">Đã xác nhận</SelectItem>
+                        <SelectItem value="shipping">Đang giao</SelectItem>
+                        <SelectItem value="delivered">Đã giao</SelectItem>
+                        <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {/* Sort */}
+                <Select
+                    value={filters.sortBy || "date-desc"}
+                    onValueChange={(value) => handleFilterChange("sortBy", value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Sắp xếp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="date-desc">Mới nhất</SelectItem>
+                        <SelectItem value="date-asc">Cũ nhất</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {isLoading ? (
@@ -290,8 +408,11 @@ function OrdersContent({
                                         <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
                                         <select
                                             className="border rounded-md px-2 py-1 text-sm"
-                                            value={order.status}
-                                            onChange={(e) => onStatusChange(order.id, e.target.value as OrderStatus)}
+                                            value={order.status.toLowerCase()}
+                                            onChange={(e) =>
+                                                handleStatusChange(order.id, e.target.value as OrderStatus)
+                                            }
+                                            disabled={isOrderCompleted(order)}
                                         >
                                             <option value="pending">Chờ xác nhận</option>
                                             <option value="confirmed">Đã xác nhận</option>
@@ -306,6 +427,56 @@ function OrdersContent({
                     ))}
                 </div>
             )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! - 1)}
+                        disabled={filters.page === 1}
+                    >
+                        Trước
+                    </Button>
+                    <span className="text-sm">
+                        Trang {filters.page} / {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! + 1)}
+                        disabled={filters.page === totalPages}
+                    >
+                        Sau
+                    </Button>
+                </div>
+            )}
+
+            {/* Confirmation Popup */}
+            <Dialog open={pendingStatusChange !== null} onOpenChange={handleCancelStatusChange}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Xác nhận thay đổi trạng thái</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p>
+                            {pendingStatusChange?.status === "delivered"
+                                ? 'Bạn có chắc chắn muốn đánh dấu đơn hàng này là "Đã giao"?'
+                                : "Bạn có chắc chắn muốn hủy đơn hàng này? Sản phẩm sẽ được hoàn lại vào kho."}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Lưu ý: Sau khi xác nhận, bạn sẽ không thể thay đổi trạng thái của đơn hàng này nữa.
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={handleCancelStatusChange}>
+                            Hủy
+                        </Button>
+                        <Button onClick={handleConfirmStatusChange}>Xác nhận</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -520,7 +691,9 @@ function ProductsContent() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Badge variant={(product.stockQuantity ?? 0) > 0 ? "success" : "destructive"}>
-                                    {(product.stockQuantity ?? 0) > 0 ? `Còn hàng (${product.stockQuantity ?? 0})` : "Hết hàng"}
+                                    {(product.stockQuantity ?? 0) > 0
+                                        ? `Còn hàng (${product.stockQuantity ?? 0})`
+                                        : "Hết hàng"}
                                 </Badge>
                                 <Button variant="outline" size="sm" onClick={() => openModal(product)}>
                                     <PencilIcon className="w-4 h-4" />
@@ -776,7 +949,7 @@ function CategoriesContent() {
 
             <Button onClick={() => openModal()} className="mb-4">
                 <PlusIcon className="w-4 h-4 mr-2" />
-                Thêm danh m���c
+                Thêm danh mục
             </Button>
 
             {error && <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>}
@@ -838,33 +1011,7 @@ function CategoriesContent() {
                                 required
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="categoryDescription">Mô tả</Label>
-                            <Textarea
-                                id="categoryDescription"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="categoryImageUrl">Hình ảnh URL</Label>
-                            <Input
-                                id="categoryImageUrl"
-                                value={formData.imageUrl}
-                                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                                placeholder="https://..."
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                id="categoryIsActive"
-                                type="checkbox"
-                                checked={formData.isActive}
-                                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                                className="w-4 h-4"
-                            />
-                            <Label htmlFor="categoryIsActive">Hoạt động</Label>
-                        </div>
+
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="outline" onClick={closeModal}>
                                 Hủy
@@ -882,7 +1029,8 @@ function CategoriesContent() {
  * Get badge variant from order status
  */
 function getBadgeVariant(status: OrderStatus): "default" | "success" | "warning" | "destructive" | "secondary" {
-    switch (status) {
+    const lowerStatus = status.toLowerCase();
+    switch (lowerStatus) {
         case "delivered":
             return "success";
         case "pending":
@@ -895,4 +1043,489 @@ function getBadgeVariant(status: OrderStatus): "default" | "success" | "warning"
         default:
             return "default";
     }
+}
+
+/**
+ * Users management content with CRUD
+ */
+function UsersContent() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+    const [filters, setFilters] = useState<UserFilters>({
+        page: 1,
+        pageSize: 20,
+    });
+    const [totalPages, setTotalPages] = useState(0);
+    const [formData, setFormData] = useState<UpdateUserRequest>({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        address: "",
+        province: "",
+        ward: "",
+        roles: [],
+    });
+    const [newPassword, setNewPassword] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
+    const fetchUsers = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const data = await getAdminUsers(filters);
+            setUsers(data.items);
+            setTotalPages(data.totalPages);
+        } catch (err) {
+            console.error("Failed to fetch users:", err);
+            setError("Không thể tải danh sách người dùng");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filters]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
+
+    const handleRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        await fetchUsers();
+        setIsRefreshing(false);
+    }, [fetchUsers]);
+
+    const handleFilterChange = (key: keyof UserFilters, value: string) => {
+        setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setFilters((prev) => ({ ...prev, page: newPage }));
+    };
+
+    const openEditModal = (user: User) => {
+        setEditingUser(user);
+        setFormData({
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            phone: user.phone || "",
+            address: user.address || "",
+            province: user.province || "",
+            ward: user.ward || "",
+            roles: user.roles || [],
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingUser(null);
+    };
+
+    const openPasswordModal = (user: User) => {
+        setEditingUser(user);
+        setNewPassword("");
+        setIsPasswordModalOpen(true);
+    };
+
+    const closePasswordModal = () => {
+        setIsPasswordModalOpen(false);
+        setEditingUser(null);
+        setNewPassword("");
+    };
+
+    const openDeleteModal = (user: User) => {
+        setEditingUser(user);
+        setSelectedUserId(user.id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setEditingUser(null);
+        setSelectedUserId(null);
+    };
+
+    const handleSubmitEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUser) return;
+
+        try {
+            setIsSaving(true);
+            await updateAdminUser(editingUser.id, {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone || undefined,
+                address: formData.address || undefined,
+                province: formData.province || undefined,
+                ward: formData.ward || undefined,
+                roles: formData.roles,
+            });
+            closeEditModal();
+            fetchUsers();
+        } catch (err) {
+            console.error("Failed to update user:", err);
+            setError("Không thể cập nhật người dùng");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSubmitPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUser || !newPassword) return;
+
+        try {
+            setIsSaving(true);
+            await updateAdminUserPassword(editingUser.id, { newPassword });
+            closePasswordModal();
+        } catch (err) {
+            console.error("Failed to update password:", err);
+            setError("Không thể cập nhật mật khẩu");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async (user: User) => {
+        try {
+            await toggleAdminUserStatus(user.id);
+            fetchUsers();
+        } catch (err) {
+            console.error("Failed to toggle user status:", err);
+            setError("Không thể thay đổi trạng thái người dùng");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedUserId) return;
+
+        try {
+            await deleteAdminUser(selectedUserId);
+            closeDeleteModal();
+            fetchUsers();
+        } catch (err) {
+            console.error("Failed to delete user:", err);
+            setError("Không thể xóa người dùng");
+        }
+    };
+
+    const handleRoleChange = (role: string, checked: boolean) => {
+        const currentRoles = formData.roles || [];
+        if (checked) {
+            setFormData({ ...formData, roles: [...currentRoles, role] });
+        } else {
+            setFormData({ ...formData, roles: currentRoles.filter((r) => r !== role) });
+        }
+    };
+
+    const hasAdminRole = (user: User) => user.roles.includes("Admin");
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Quản lý người dùng</h2>
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+                    <RotateCcwIcon className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                    {isRefreshing ? "Đang tải..." : "Làm mới"}
+                </Button>
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-2">
+                <Input
+                    placeholder="Tìm kiếm theo email, tên..."
+                    value={filters.search || ""}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className="max-w-xs"
+                />
+                <Select
+                    value={filters.isActive === undefined ? "all" : filters.isActive ? "active" : "inactive"}
+                    onValueChange={(value) =>
+                        handleFilterChange("isActive", value === "all" ? "" : value === "active" ? "true" : "false")
+                    }
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="active">Hoạt động</SelectItem>
+                        <SelectItem value="inactive">Bị vô hiệu</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select
+                    value={filters.role || "all"}
+                    onValueChange={(value) => handleFilterChange("role", value === "all" ? "" : value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Vai trò" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="User">User</SelectItem>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {error && <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>}
+
+            {isLoading ? (
+                <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                </div>
+            ) : users.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">Chưa có người dùng nào</div>
+            ) : (
+                <div className="border rounded-lg divide-y">
+                    {users.map((user) => (
+                        <div key={user.id} className="flex items-center justify-between p-4 gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                        {user.firstName} {user.lastName}
+                                    </span>
+                                    <Badge variant={user.isActive ? "success" : "secondary"}>
+                                        {user.isActive ? "Hoạt động" : "Bị vô hiệu"}
+                                    </Badge>
+                                    {hasAdminRole(user) && <Badge variant="warning">Admin</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {user.phone || "Chưa có SĐT"} • {formatDate(user.createdAt)}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditModal(user)}
+                                    title="Sửa thông tin"
+                                >
+                                    <PencilIcon className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openPasswordModal(user)}
+                                    title="Đổi mật khẩu"
+                                >
+                                    <KeyRound className="w-4 h-4" />
+                                </Button>
+                                {!hasAdminRole(user) && (
+                                    <Button
+                                        variant={user.isActive ? "outline" : "default"}
+                                        size="sm"
+                                        onClick={() => handleToggleStatus(user)}
+                                        title={user.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
+                                    >
+                                        {user.isActive ? (
+                                            <ShieldBan className="w-4 h-4" />
+                                        ) : (
+                                            <ShieldCheck className="w-4 h-4" />
+                                        )}
+                                    </Button>
+                                )}
+
+                                {!hasAdminRole(user) && (
+                                    <Button variant="ghost" size="sm" onClick={() => openDeleteModal(user)} title="Xóa">
+                                        <TrashIcon className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! - 1)}
+                        disabled={filters.page === 1}
+                    >
+                        Trước
+                    </Button>
+                    <span className="text-sm">
+                        Trang {filters.page} / {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! + 1)}
+                        disabled={filters.page === totalPages}
+                    >
+                        Sau
+                    </Button>
+                </div>
+            )}
+
+            {/* Edit User Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Sửa thông tin người dùng</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmitEdit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">Họ</Label>
+                            <Input
+                                id="firstName"
+                                value={formData.firstName}
+                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">Tên</Label>
+                            <Input
+                                id="lastName"
+                                value={formData.lastName}
+                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Số điện thoại</Label>
+                            <Input
+                                id="phone"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="address">Địa chỉ</Label>
+                            <Input
+                                id="address"
+                                value={formData.address}
+                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="province">Tỉnh/TP</Label>
+                                <Input
+                                    id="province"
+                                    value={formData.province}
+                                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="ward">Phường/Xã</Label>
+                                <Input
+                                    id="ward"
+                                    value={formData.ward}
+                                    onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Vai trò</Label>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.roles?.includes("User")}
+                                        onChange={(e) => handleRoleChange("User", e.target.checked)}
+                                    />
+                                    User
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.roles?.includes("Admin")}
+                                        onChange={(e) => handleRoleChange("Admin", e.target.checked)}
+                                    />
+                                    Admin
+                                </label>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={closeEditModal}>
+                                Hủy
+                            </Button>
+                            <Button type="submit" disabled={isSaving}>
+                                {isSaving ? "Đang lưu..." : "Lưu"}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Change Password Modal */}
+            <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Đổi mật khẩu</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmitPassword} className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            Đổi mật khẩu cho: <strong>{editingUser?.email}</strong>
+                        </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                            <Input
+                                id="newPassword"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+                                minLength={6}
+                                required
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={closePasswordModal}>
+                                Hủy
+                            </Button>
+                            <Button type="submit" disabled={isSaving || newPassword.length < 6}>
+                                {isSaving ? "Đang lưu..." : "Đổi mật khẩu"}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Xác nhận xóa</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p>
+                            Bạn có chắc chắn muốn xóa tài khoản của{" "}
+                            <strong>
+                                {editingUser?.firstName} {editingUser?.lastName}
+                            </strong>
+                            ?
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">Email: {editingUser?.email}</p>
+                        <p className="text-sm text-destructive mt-2">
+                            Lưu ý: Tài khoản sẽ bị vô hiệu hóa nhưng dữ liệu đơn hàng sẽ được giữ lại.
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={closeDeleteModal}>
+                            Hủy
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
 }

@@ -15,9 +15,44 @@ export interface User {
   phone?: string;
   address?: string;
   province: string;
-  district: string;
+  provinceName?: string;
   ward: string;
+  wardName?: string;
+  isActive: boolean;
   createdAt: string;
+}
+
+/**
+ * User filters for admin API
+ */
+export interface UserFilters {
+  search?: string;
+  isActive?: boolean;
+  role?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * Update user request payload (admin)
+ */
+export interface UpdateUserRequest {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  address?: string;
+  province?: string;
+  provinceName?: string;
+  ward?: string;
+  wardName?: string;
+  roles?: string[];
+}
+
+/**
+ * Update user password request (admin)
+ */
+export interface UpdateUserPasswordRequest {
+  newPassword: string;
 }
 
 /**
@@ -32,8 +67,9 @@ export interface AuthResponse {
   phone?: string;
   address?: string;
   province: string;
-  district: string;
+  provinceName?: string;
   ward: string;
+  wardName?: string;
 }
 
 /**
@@ -47,8 +83,9 @@ export interface RegisterRequest {
   phone: string;
   address: string;
   province: string;
-  district: string;
+  provinceName?: string;
   ward: string;
+  wardName?: string;
 }
 
 /**
@@ -68,8 +105,9 @@ export interface UpdateProfileRequest {
   phone?: string;
   address?: string;
   province?: string;
-  district?: string;
+  provinceName?: string;
   ward?: string;
+  wardName?: string;
 }
 
 /**

@@ -41,8 +41,16 @@ export async function getOrderById(id: number): Promise<Order> {
 export async function getMyOrders(
   filters?: OrderFilters
 ): Promise<PaginatedOrders> {
+  // Filter out empty values to ensure API receives valid params
+  const params: Record<string, string | number> = {};
+  if (filters?.status) params.status = filters.status;
+  if (filters?.search) params.search = filters.search;
+  if (filters?.sortBy) params.sortBy = filters.sortBy;
+  if (filters?.page) params.page = filters.page;
+  if (filters?.pageSize) params.pageSize = filters.pageSize;
+
   const response = await axios.get<ApiResponse<PaginatedOrders>>('/orders', {
-    params: filters,
+    params,
   });
   return response.data.data;
 }

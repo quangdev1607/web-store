@@ -25,8 +25,9 @@ export function ProfilePage() {
     phone: user?.phone || '',
     email: user?.email || '',
     province: user?.province || '',
-    district: user?.district || '',
+    provinceName: user?.provinceName || '',
     ward: user?.ward || '',
+    wardName: user?.wardName || '',
     address: user?.address || '',
   });
 
@@ -39,8 +40,9 @@ export function ProfilePage() {
         phone: user.phone || '',
         email: user.email || '',
         province: user.province || '',
-        district: user.district || '',
+        provinceName: user.provinceName || '',
         ward: user.ward || '',
+        wardName: user.wardName || '',
         address: user.address || '',
       });
     }
@@ -68,8 +70,9 @@ export function ProfilePage() {
         phone: formData.phone,
         address: formData.address,
         province: formData.province,
-        district: formData.district,
+        provinceName: formData.provinceName,
         ward: formData.ward,
+        wardName: formData.wardName,
       });
 
       // Update local store with new user data (this will persist to localStorage)
@@ -98,8 +101,9 @@ export function ProfilePage() {
         phone: user.phone || '',
         email: user.email || '',
         province: user.province || '',
-        district: user.district || '',
+        provinceName: user.provinceName || '',
         ward: user.ward || '',
+        wardName: user.wardName || '',
         address: user.address || '',
       });
     }
@@ -176,12 +180,16 @@ export function ProfilePage() {
               <label className="text-sm font-medium">Địa chỉ</label>
               <AddressPicker
                 province={formData.province}
-                district={formData.district}
                 ward={formData.ward}
                 address={formData.address}
-                onProvinceChange={(value) => handleChange('province', value)}
-                onDistrictChange={(value) => handleChange('district', value)}
-                onWardChange={(value) => handleChange('ward', value)}
+                onProvinceChange={(value, name) => {
+                  handleChange('province', value);
+                  if (name) handleChange('provinceName', name);
+                }}
+                onWardChange={(value, name) => {
+                  handleChange('ward', value);
+                  if (name) handleChange('wardName', name);
+                }}
                 onAddressChange={(value) => handleChange('address', value)}
               />
             </div>

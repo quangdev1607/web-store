@@ -27,7 +27,6 @@ interface AuthState {
     phone: string;
     address: string;
     province: string;
-    district: string;
     ward: string;
   }) => Promise<void>;
   logout: () => void;
@@ -70,8 +69,10 @@ export const useAuthStore = create<AuthState>()(
               phone: response.phone,
               address: response.address,
               province: response.province,
-              district: response.district,
+              provinceName: response.provinceName,
               ward: response.ward,
+              wardName: response.wardName,
+              isActive: true,
               createdAt: new Date().toISOString(),
             },
             token: response.token,
@@ -112,8 +113,10 @@ export const useAuthStore = create<AuthState>()(
               phone: response.phone,
               address: response.address,
               province: response.province,
-              district: response.district,
+              provinceName: response.provinceName,
               ward: response.ward,
+              wardName: response.wardName,
+              isActive: true,
               createdAt: new Date().toISOString(),
             },
             token: response.token,

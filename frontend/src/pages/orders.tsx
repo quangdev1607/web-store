@@ -6,10 +6,20 @@ import { getMyOrders, getOrderById } from "@/api/orders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatPrice } from "@/lib/format";
 import { useAuthStore } from "@/stores/auth-store";
 import type { Order, OrderStatus } from "@/types/order";
+import type { OrderFilters } from "@/types/api";
+import type { PaginatedOrders } from "@/types/order";
 import { getOrderStatusLabel } from "@/types/order";
 import { RotateCcwIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -21,25 +31,34 @@ import { Link, Navigate } from "react-router-dom";
 export function OrdersPage() {
     const { isAuthenticated } = useAuthStore();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string>("");
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
+    const [filters, setFilters] = useState<OrderFilters>({
+        page: 1,
+        pageSize: 10,
+        status: "",
+        search: "",
+        sortBy: "date-desc",
+    });
 
     // Fetch orders
     const fetchOrders = useCallback(async () => {
         try {
             setIsLoading(true);
-            const result = await getMyOrders();
+            const result: PaginatedOrders = await getMyOrders(filters);
             setOrders(result.items);
+            setTotalPages(result.totalPages);
         } catch (err) {
             console.error("Failed to fetch orders:", err);
             setError("Không thể tải danh sách đơn hàng");
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [filters]);
 
     // Fetch order details
     const fetchOrderDetails = useCallback(async (orderId: number) => {
@@ -54,7 +73,7 @@ export function OrdersPage() {
         }
     }, []);
 
-    // Fetch orders when page loads
+    // Fetch orders when page loads or filters change
     useEffect(() => {
         if (isAuthenticated) {
             fetchOrders();
@@ -76,6 +95,16 @@ export function OrdersPage() {
         [fetchOrderDetails],
     );
 
+    // Handle filter change
+    const handleFilterChange = (key: keyof OrderFilters, value: string) => {
+        setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    // Handle page change
+    const handlePageChange = (newPage: number) => {
+        setFilters((prev) => ({ ...prev, page: newPage }));
+    };
+
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
@@ -88,6 +117,44 @@ export function OrdersPage() {
                     <RotateCcwIcon className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                     {isRefreshing ? "Đang tải..." : "Làm mới"}
                 </Button>
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-2">
+                <Input
+                    placeholder="Tìm kiếm theo mã đơn hàng..."
+                    value={filters.search || ""}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className="max-w-xs"
+                />
+                <Select
+                    value={filters.status || "all"}
+                    onValueChange={(value) => handleFilterChange("status", value === "all" ? "" : value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ xác nhận</SelectItem>
+                        <SelectItem value="confirmed">Đã xác nhận</SelectItem>
+                        <SelectItem value="shipping">Đang giao</SelectItem>
+                        <SelectItem value="delivered">Đã giao</SelectItem>
+                        <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select
+                    value={filters.sortBy || "date-desc"}
+                    onValueChange={(value) => handleFilterChange("sortBy", value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Sắp xếp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="date-desc">Mới nhất</SelectItem>
+                        <SelectItem value="date-asc">Cũ nhất</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {error && <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>}
@@ -110,6 +177,31 @@ export function OrdersPage() {
                     {orders.map((order) => (
                         <OrderCard key={order.id} order={order} onViewDetails={handleViewDetails} />
                     ))}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! - 1)}
+                        disabled={filters.page === 1}
+                    >
+                        Trước
+                    </Button>
+                    <span className="text-sm">
+                        Trang {filters.page} / {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(filters.page! + 1)}
+                        disabled={filters.page === totalPages}
+                    >
+                        Sau
+                    </Button>
                 </div>
             )}
 
@@ -165,7 +257,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
 function OrderDetailContent({ order }: { order: Order }) {
     const shippingAddress = order.shippingAddress;
     const fullAddress = shippingAddress
-        ? [shippingAddress.address, shippingAddress.ward, shippingAddress.district, shippingAddress.province]
+        ? [shippingAddress.address, shippingAddress.ward, shippingAddress.province]
               .filter(Boolean)
               .join(", ")
         : "Chưa cập nhật";

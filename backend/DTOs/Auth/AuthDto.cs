@@ -8,8 +8,9 @@ public record RegisterRequest(
     string? Phone = null,
     string? Address = null,
     string? Province = null,
-    string? District = null,
-    string? Ward = null
+    string? ProvinceName = null,
+    string? Ward = null,
+    string? WardName = null
 );
 
 public record LoginRequest(
@@ -26,8 +27,9 @@ public record AuthResponse(
     string? Phone = null,
     string? Address = null,
     string? Province = null,
-    string? District = null,
-    string? Ward = null
+    string? ProvinceName = null,
+    string? Ward = null,
+    string? WardName = null
 );
 
 public record UserDto(
@@ -39,8 +41,9 @@ public record UserDto(
     string? Phone = null,
     string? Address = null,
     string? Province = null,
-    string? District = null,
+    string? ProvinceName = null,
     string? Ward = null,
+    string? WardName = null,
     DateTime CreatedAt = default
 );
 
@@ -51,6 +54,7 @@ public record UpdateProfileRequest(
     string? Phone = null,
     string? Address = null,
     string? Province = null,
-    string? District = null,
-    string? Ward = null
+    string? ProvinceName = null,
+    string? Ward = null,
+    string? WardName = null
 );

@@ -1,259 +1,235 @@
 /**
  * Address Picker Component
- * Province/District/Ward selection for shipping address
+ * Province/Ward selection for shipping address
+ * Fetches data from backend API
  */
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { axiosInstance } from '@/api/axios';
+
+interface Province {
+  id: number;
+  name: string;
+  divisionType: string;
+  codeName: string;
+  phoneCode: number;
+}
+
+interface Ward {
+  id: number;
+  name: string;
+  code: number;
+  divisionType: string;
+  codeName: string;
+  provinceCode: number;
+}
 
 interface AddressPickerProps {
-  /** Selected province */
+  /** Selected province code */
   province?: string;
-  /** Selected district */
-  district?: string;
-  /** Selected ward */
+  /** Selected ward code */
   ward?: string;
   /** Detailed address */
   address?: string;
   /** Callback when province changes */
-  onProvinceChange?: (value: string) => void;
-  /** Callback when district changes */
-  onDistrictChange?: (value: string) => void;
+  onProvinceChange?: (value: string, name?: string) => void;
   /** Callback when ward changes */
-  onWardChange?: (value: string) => void;
+  onWardChange?: (value: string, name?: string) => void;
   /** Callback when address detail changes */
   onAddressChange?: (value: string) => void;
 }
 
-/**
- * Vietnamese provinces data (simplified - in production, fetch from API)
- */
-const VIETNAM_PROVINCES = [
-  'TP Hồ Chí Minh',
-  'Hà Nội',
-  'Đà Nẵng',
-  'Hải Phòng',
-  'Cần Thơ',
-  'An Giang',
-  'Bà Rịa - Vũng Tàu',
-  'Bắc Giang',
-  'Bắc Kạn',
-  'Bạc Liêu',
-  'Bắc Ninh',
-  'Bến Tre',
-  'Bình Định',
-  'Bình Dương',
-  'Bình Phước',
-  'Bình Thuận',
-  'Cà Mau',
-  'Cao Bằng',
-  'Đắk Lắk',
-  'Đắk Nông',
-  'Điện Biên',
-  'Đồng Nai',
-  'Đồng Tháp',
-  'Gia Lai',
-  'Hà Giang',
-  'Hà Nam',
-  'Hà Tĩnh',
-  'Hải Dương',
-  'Hậu Giang',
-  'Hòa Bình',
-  'Hưng Yên',
-  'Khánh Hòa',
-  'Kiên Giang',
-  'Kon Tum',
-  'Lai Châu',
-  'Lâm Đồng',
-  'Lạng Sơn',
-  'Lào Cai',
-  'Long An',
-  'Nam Định',
-  'Nghệ An',
-  'Ninh Bình',
-  'Ninh Thuận',
-  'Phú Thọ',
-  'Phú Yên',
-  'Quảng Bình',
-  'Quảng Nam',
-  'Quảng Ngãi',
-  'Quảng Ninh',
-  'Quảng Trị',
-  'Sóc Trăng',
-  'Sơn La',
-  'Tây Ninh',
-  'Thái Bình',
-  'Thái Nguyên',
-  'Thanh Hóa',
-  'Thừa Thiên Huế',
-  'Tiền Giang',
-  'Trà Vinh',
-  'Tuyên Quang',
-  'Vĩnh Long',
-  'Vĩnh Phúc',
-  'Yên Bái',
-];
+async function fetchProvinces(): Promise<Province[]> {
+  const response = await axiosInstance.get('/locations/provinces');
+  return response.data;
+}
 
-// Sample districts by province
-const DISTRICTS: Record<string, string[]> = {
-  'TP Hồ Chí Minh': [
-    'Quận 1',
-    'Quận 3',
-    'Quận 4',
-    'Quận 5',
-    'Quận 6',
-    'Quận 7',
-    'Quận 8',
-    'Quận 10',
-    'Quận 11',
-    'Quận 12',
-    'Bình Thạnh',
-    'Gò Vấp',
-    'Phú Nhuận',
-    'Tân Bình',
-    'Tân Phú',
-    'Thủ Đức',
-    'Hóc Môn',
-    'Củ Chi',
-    'Nhà Bè',
-    'Bình Chánh',
-    'Cần Giờ',
-  ],
-  'Hà Nội': [
-    'Quận Ba Đình',
-    'Quận Hoàn Kiếm',
-    'Quận Đống Đa',
-    'Quận Cầu Giấy',
-    'Quận Than Xuân',
-    'Quận Long Biên',
-    'Quận Nam Từ Liêm',
-    'Quận Bắc Từ Liêm',
-    'Quận Hà Đông',
-    'Quận Hai Bà Trưng',
-    'Quận Thanh Xuân',
-    'Quận Hoàng Mai',
-    'Quận Đông Anh',
-    'Quận Gia Lâm',
-    'Quận Sơn Tây',
-    'Quận Thường Tín',
-    'Quận Phú Xuyên',
-    'Quận Sóc Sơn',
-    'Quận Mỹ Đức',
-    'Quận Chương Mỹ',
-    'Quận Thanh Oai',
-    'Quận Quốc Oai',
-    'Quận Phúc Thọ',
-    'Quận Đan Phượng',
-    'Quận Hoài Đức',
-    'Huyện Tây Hồ',
-    'Huyện Ba Vì',
-    'Huyện Phúc Thọ',
-    'Huyện Thạch Thất',
-    'Huyện Quốc Oai',
-    'Huyện Chương Mỹ',
-    'Huyện Đan Phượng',
-    'Huyện Hoài Đức',
-  ],
-};
+async function fetchWards(provinceCode: number): Promise<Ward[]> {
+  const response = await axiosInstance.get(`/locations/provinces/${provinceCode}/wards`);
+  return response.data;
+}
 
-// Get wards (simplified - in production would be more detailed)
-const WARDS = [
-  'Phường 1',
-  'Phường 2',
-  'Phường 3',
-  'Phường 4',
-  'Phường 5',
-  'Phường 6',
-  'Phường 7',
-  'Phường 8',
-  'Phường 9',
-  'Phường 10',
-  'Phường 11',
-  'Phường 12',
-  'Phường 13',
-  'Phường 14',
-  'Phường 15',
-];
-
-/**
- * AddressPicker provides province/district/ward selection
- */
 export function AddressPicker({
   province,
-  district,
   ward,
   address,
   onProvinceChange,
-  onDistrictChange,
   onWardChange,
   onAddressChange,
 }: AddressPickerProps) {
-  const [selectedProvince, setSelectedProvince] = useState(province || '');
-  const [selectedDistrict, setSelectedDistrict] = useState(district || '');
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
 
-  const handleProvinceChange = (value: string) => {
-    setSelectedProvince(value);
-    setSelectedDistrict('');
-    onProvinceChange?.(value);
-  };
+  const [loadingProvinces, setLoadingProvinces] = useState(true);
+  const [loadingWards, setLoadingWards] = useState(false);
 
-  const handleDistrictChange = (value: string) => {
-    setSelectedDistrict(value);
-    onDistrictChange?.(value);
-  };
+  const [error, setError] = useState<string | null>(null);
 
-  const districts = DISTRICTS[selectedProvince] || [];
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<string>(province || '');
+  const [selectedWardCode, setSelectedWardCode] = useState<string>(ward || '');
+
+  // Fetch provinces on mount
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadProvinces() {
+      try {
+        setLoadingProvinces(true);
+        setError(null);
+        const data = await fetchProvinces();
+        if (mounted) {
+          setProvinces(data);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError('Không thể tải danh sách tỉnh/thành phố');
+          console.error('Error fetching provinces:', err);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingProvinces(false);
+        }
+      }
+    }
+
+    loadProvinces();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Fetch wards when province changes
+  useEffect(() => {
+    if (!selectedProvinceCode) {
+      setWards([]);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadWards() {
+      try {
+        setLoadingWards(true);
+        setError(null);
+        const data = await fetchWards(Number(selectedProvinceCode));
+        if (mounted) {
+          setWards(data);
+          // Set initial ward if provided and province matches
+          if (ward) {
+            setSelectedWardCode(ward);
+          }
+        }
+      } catch (err) {
+        if (mounted) {
+          setError('Không thể tải danh sách phường/xã');
+          console.error('Error fetching wards:', err);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingWards(false);
+        }
+      }
+    }
+
+    loadWards();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedProvinceCode]);
+
+  // Sync with props
+  useEffect(() => {
+    if (province) {
+      setSelectedProvinceCode(province);
+    }
+  }, [province]);
+
+  useEffect(() => {
+    if (ward) {
+      setSelectedWardCode(ward);
+    }
+  }, [ward]);
+
+  const handleProvinceChange = useCallback((value: string) => {
+    setSelectedProvinceCode(value);
+    setSelectedWardCode('');
+    const province = provinces.find(p => p.id === Number(value));
+    onProvinceChange?.(value, province?.name);
+  }, [onProvinceChange, provinces]);
+
+  const handleWardChange = useCallback((value: string) => {
+    setSelectedWardCode(value);
+    const ward = wards.find(w => w.code === Number(value));
+    onWardChange?.(value, ward?.name);
+  }, [onWardChange, wards]);
+
+  const selectedProvince = provinces.find(p => p.id === Number(selectedProvinceCode));
+  const selectedWard = wards.find(w => w.code === Number(selectedWardCode));
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="text-sm text-red-500 p-2 bg-red-50 rounded">
+          {error}
+        </div>
+      )}
+
       {/* Province */}
       <div>
         <label className="text-sm font-medium">Tỉnh/Thành phố</label>
-        <Select value={province} onValueChange={handleProvinceChange}>
+        <Select
+          value={selectedProvinceCode}
+          onValueChange={handleProvinceChange}
+          disabled={loadingProvinces}
+        >
           <SelectTrigger>
-            <SelectValue placeholder="Chọn tỉnh/thành phố" />
+            <SelectValue
+              placeholder={
+                loadingProvinces
+                  ? 'Đang tải...'
+                  : province && selectedProvince
+                  ? selectedProvince.name
+                  : 'Chọn tỉnh/thành phố'
+              }
+            />
           </SelectTrigger>
           <SelectContent>
-            {VIETNAM_PROVINCES.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
+            {provinces.map((p) => (
+              <SelectItem key={p.id} value={String(p.id)}>
+                {p.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* District */}
-      {selectedProvince && (
-        <div>
-          <label className="text-sm font-medium">Quận/Huyện</label>
-          <Select value={district} onValueChange={onDistrictChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn quận/huyện" />
-            </SelectTrigger>
-            <SelectContent>
-              {districts.map((d) => (
-                <SelectItem key={d} value={d}>
-                  {d}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
       {/* Ward */}
-      {selectedDistrict && (
+      {selectedProvinceCode && (
         <div>
           <label className="text-sm font-medium">Phường/Xã</label>
-          <Select value={ward} onValueChange={onWardChange}>
+          <Select
+            value={selectedWardCode}
+            onValueChange={handleWardChange}
+            disabled={loadingWards}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Chọn phường/xã" />
+              <SelectValue
+                placeholder={
+                  loadingWards
+                    ? 'Đang tải...'
+                    : ward && selectedWard
+                    ? selectedWard.name
+                    : 'Chọn phường/xã'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {WARDS.map((w) => (
-                <SelectItem key={w} value={w}>
-                  {w}
+              {wards.map((w) => (
+                <SelectItem key={w.code} value={String(w.code)}>
+                  {w.name}
                 </SelectItem>
               ))}
             </SelectContent>

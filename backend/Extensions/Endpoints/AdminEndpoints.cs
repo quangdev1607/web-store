@@ -7,6 +7,7 @@ using TiemBanhBeYeu.Api.DTOs.Orders;
 using TiemBanhBeYeu.Api.DTOs.Products;
 using TiemBanhBeYeu.Api.Domain.Entities;
 using TiemBanhBeYeu.Api.Infrastructure.Persistence;
+using TiemBanhBeYeu.Api.Infrastructure.Services;
 
 namespace TiemBanhBeYeu.Api.Extensions.Endpoints;
 
@@ -150,6 +151,43 @@ public static class AdminEndpoints
             .Produces<ApiResponse<PagedResponse<UserManagementDto>>>()
             .ProducesProblem(401)
             .RequireAuthorization("Admin");
+
+        admin.MapGet("/users/{id:int}", GetUserById)
+            .WithName("GetUserById")
+            .Produces<ApiResponse<UserManagementDto>>()
+            .ProducesProblem(404)
+            .ProducesProblem(401)
+            .RequireAuthorization("Admin");
+
+        admin.MapPut("/users/{id:int}", UpdateUser)
+            .WithName("UpdateUser")
+            .Produces<ApiResponse<UserManagementDto>>()
+            .ProducesProblem(400)
+            .ProducesProblem(404)
+            .ProducesProblem(401)
+            .RequireAuthorization("Admin");
+
+        admin.MapPatch("/users/{id:int}/password", UpdateUserPassword)
+            .WithName("UpdateUserPassword")
+            .Produces<ApiResponse<UserManagementDto>>()
+            .ProducesProblem(400)
+            .ProducesProblem(404)
+            .ProducesProblem(401)
+            .RequireAuthorization("Admin");
+
+        admin.MapPatch("/users/{id:int}/status", ToggleUserStatus)
+            .WithName("ToggleUserStatus")
+            .Produces<ApiResponse<UserManagementDto>>()
+            .ProducesProblem(404)
+            .ProducesProblem(401)
+            .RequireAuthorization("Admin");
+
+        admin.MapDelete("/users/{id:int}", DeleteUser)
+            .WithName("DeleteUser")
+            .Produces<ApiResponse<UserManagementDto>>()
+            .ProducesProblem(404)
+            .ProducesProblem(401)
+            .RequireAuthorization("Admin");
     }
 
     private static async Task<IResult> GetDashboardStats(
@@ -204,6 +242,7 @@ public static class AdminEndpoints
     private static async Task<IResult> GetAllOrders(
         string? status = null,
         string? search = null,
+        string? sortBy = null,
         int page = 1,
         int pageSize = 20,
         HttpContext httpContext = null!,
@@ -225,16 +264,24 @@ public static class AdminEndpoints
 
         if (!string.IsNullOrEmpty(search))
         {
-            query = query.Where(o => 
-                o.OrderCode.Contains(search) || 
-                o.CustomerName.Contains(search) || 
-                o.CustomerEmail.Contains(search));
+            query = query.Where(o =>
+                o.OrderCode.Contains(search) ||
+                o.CustomerName.Contains(search) ||
+                o.CustomerEmail.Contains(search) ||
+                o.CustomerPhone.Contains(search));
         }
 
+        // Apply sorting
+        query = sortBy?.ToLower() switch
+        {
+            "date-asc" => query.OrderBy(o => o.CreatedAt),
+            "date-desc" => query.OrderByDescending(o => o.CreatedAt),
+            _ => query.OrderByDescending(o => o.CreatedAt)
+        };
+
         var totalCount = await query.CountAsync(ct);
-        
+
         var orders = await query
-            .OrderByDescending(o => o.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(o => new OrderSummaryDto(
@@ -273,7 +320,7 @@ public static class AdminEndpoints
             order.CustomerName,
             order.CustomerPhone,
             order.CustomerEmail,
-            new ShippingAddressDto(order.Province, order.District, order.Ward, order.Address),
+            new ShippingAddressDto(order.Province, order.Ward, order.Address),
             order.TotalAmount,
             order.Status.ToString(),
             order.CreatedAt,
@@ -343,7 +390,7 @@ public static class AdminEndpoints
             order.CustomerName,
             order.CustomerPhone,
             order.CustomerEmail,
-            new ShippingAddressDto(order.Province, order.District, order.Ward, order.Address),
+            new ShippingAddressDto(order.Province, order.Ward, order.Address),
             order.TotalAmount,
             order.Status.ToString(),
             order.CreatedAt,
@@ -406,6 +453,7 @@ public static class AdminEndpoints
                 p.Name,
                 p.Description,
                 p.Category.Name,
+                p.CategoryId,
                 p.Price,
                 p.Images.Select(i => i.ImageUrl).ToList(),
                 p.StockQuantity,
@@ -439,6 +487,7 @@ public static class AdminEndpoints
             product.Name,
             product.Description,
             product.Category.Name,
+            product.CategoryId,
             product.Price,
             product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
@@ -563,6 +612,7 @@ public static class AdminEndpoints
                 product.Name,
                 product.Description,
                 category.Name,
+                product.CategoryId,
                 product.Price,
                 product.Images.Select(i => i.ImageUrl).ToList(),
                 product.StockQuantity,
@@ -659,6 +709,7 @@ public static class AdminEndpoints
                 product.Name,
                 product.Description,
                 category.Name,
+                product.CategoryId,
                 product.Price,
                 product.Images.Select(i => i.ImageUrl).ToList(),
                 product.StockQuantity,
@@ -705,15 +756,16 @@ public static class AdminEndpoints
 
         await db.SaveChangesAsync(ct);
 
-        var category = await db.Categories
+var category = await db.Categories
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == product.CategoryId, ct);
 
-var dto = new ProductManagementDto(
+        var dto = new ProductManagementDto(
             product.Id,
             product.Name,
             product.Description,
-            product.Category.Name,
+            category?.Name ?? "Không có danh mục",
+            product.CategoryId,
             product.Price,
             product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
@@ -757,6 +809,7 @@ var dto = new ProductManagementDto(
             product.Name,
             product.Description,
             product.Category.Name,
+            product.CategoryId,
             product.Price,
             product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
@@ -801,6 +854,7 @@ var dto = new ProductManagementDto(
             product.Name,
             product.Description,
             product.Category.Name,
+            product.CategoryId,
             product.Price,
             product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
@@ -1081,6 +1135,269 @@ var dto = new ProductManagementDto(
 
     // ==================== USERS MANAGEMENT ====================
 
+    private static async Task<IResult> GetUserById(
+        int id,
+        AppDbContext db,
+        IPasswordHasher passwordHasher,
+        CancellationToken ct)
+    {
+        var user = await db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (user is null)
+        {
+            return Results.NotFound(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("USER_NOT_FOUND", "User not found")
+            ));
+        }
+
+        var dto = new UserManagementDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Phone,
+            user.Address,
+            user.Province,
+            user.ProvinceName,
+            user.Ward,
+            user.WardName,
+            user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            user.IsActive,
+            user.CreatedAt
+        );
+
+        return Results.Ok(new ApiResponse<UserManagementDto>(true, dto));
+    }
+
+    private static async Task<IResult> UpdateUser(
+        int id,
+        UpdateUserRequest request,
+        AppDbContext db,
+        CancellationToken ct)
+    {
+        var user = await db.Users
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (user is null)
+        {
+            return Results.NotFound(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("USER_NOT_FOUND", "User not found")
+            ));
+        }
+
+        // Update fields if provided
+        if (!string.IsNullOrWhiteSpace(request.FirstName))
+            user.FirstName = request.FirstName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.LastName))
+            user.LastName = request.LastName.Trim();
+
+        if (request.Phone is not null)
+            user.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
+
+        if (request.Address is not null)
+            user.Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Province))
+            user.Province = request.Province.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.ProvinceName))
+            user.ProvinceName = request.ProvinceName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Ward))
+            user.Ward = request.Ward.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.WardName))
+            user.WardName = request.WardName.Trim();
+
+        if (request.Roles is { Count: > 0 })
+        {
+            // Validate roles
+            var validRoles = new[] { "User", "Admin" };
+            var invalidRoles = request.Roles.Except(validRoles, StringComparer.OrdinalIgnoreCase).ToList();
+            if (invalidRoles.Any())
+            {
+                return Results.BadRequest(new ApiResponse<UserManagementDto>(
+                    Success: false,
+                    Data: null,
+                    Error: new ApiError("INVALID_ROLES", $"Invalid roles: {string.Join(", ", invalidRoles)}. Valid roles: {string.Join(", ", validRoles)}")
+                ));
+            }
+
+            user.Roles = string.Join(",", request.Roles);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var dto = new UserManagementDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Phone,
+            user.Address,
+            user.Province,
+            user.ProvinceName,
+            user.Ward,
+            user.WardName,
+            user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            user.IsActive,
+            user.CreatedAt
+        );
+
+        return Results.Ok(new ApiResponse<UserManagementDto>(true, dto, "User updated successfully"));
+    }
+
+    private static async Task<IResult> UpdateUserPassword(
+        int id,
+        UpdateUserPasswordRequest request,
+        AppDbContext db,
+        IPasswordHasher passwordHasher,
+        CancellationToken ct)
+    {
+        // Validate password
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+        {
+            return Results.BadRequest(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("INVALID_PASSWORD", "Password must be at least 6 characters")
+            ));
+        }
+
+        var user = await db.Users
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (user is null)
+        {
+            return Results.NotFound(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("USER_NOT_FOUND", "User not found")
+            ));
+        }
+
+        // Hash new password and update
+        user.PasswordHash = passwordHasher.HashPassword(request.NewPassword);
+
+        await db.SaveChangesAsync(ct);
+
+        var dto = new UserManagementDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Phone,
+            user.Address,
+            user.Province,
+            user.ProvinceName,
+            user.Ward,
+            user.WardName,
+            user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            user.IsActive,
+            user.CreatedAt
+        );
+
+        return Results.Ok(new ApiResponse<UserManagementDto>(true, dto, "Password updated successfully"));
+    }
+
+    private static async Task<IResult> ToggleUserStatus(
+        int id,
+        AppDbContext db,
+        CancellationToken ct)
+    {
+        var user = await db.Users
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (user is null)
+        {
+            return Results.NotFound(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("USER_NOT_FOUND", "User not found")
+            ));
+        }
+
+        user.IsActive = !user.IsActive;
+
+        await db.SaveChangesAsync(ct);
+
+        var dto = new UserManagementDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Phone,
+            user.Address,
+            user.Province,
+            user.ProvinceName,
+            user.Ward,
+            user.WardName,
+            user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            user.IsActive,
+            user.CreatedAt
+        );
+
+        return Results.Ok(new ApiResponse<UserManagementDto>(true, dto, user.IsActive ? "User activated successfully" : "User deactivated successfully"));
+    }
+
+    private static async Task<IResult> DeleteUser(
+        int id,
+        AppDbContext db,
+        CancellationToken ct)
+    {
+        var user = await db.Users
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+        if (user is null)
+        {
+            return Results.NotFound(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("USER_NOT_FOUND", "User not found")
+            ));
+        }
+
+        // Cannot delete admin user
+        if (user.HasRole("Admin"))
+        {
+            return Results.BadRequest(new ApiResponse<UserManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("CANNOT_DELETE_ADMIN", "Cannot delete admin user")
+            ));
+        }
+
+        // Soft delete - just deactivate
+        user.IsActive = false;
+
+        await db.SaveChangesAsync(ct);
+
+        var dto = new UserManagementDto(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Phone,
+            user.Address,
+            user.Province,
+            user.ProvinceName,
+            user.Ward,
+            user.WardName,
+            user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            user.IsActive,
+            user.CreatedAt
+        );
+
+        return Results.Ok(new ApiResponse<UserManagementDto>(true, dto, "User deleted successfully"));
+    }
+
     private static async Task<IResult> GetAllUsers(
         string? search = null,
         bool? isActive = null,
@@ -1128,8 +1445,9 @@ var dto = new ProductManagementDto(
                 u.Phone,
                 u.Address,
                 u.Province,
-                u.District,
+                u.ProvinceName,
                 u.Ward,
+                u.WardName,
                 u.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
                 u.IsActive,
                 u.CreatedAt
