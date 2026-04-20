@@ -27,8 +27,10 @@ public record UpdateOrderStatusRequest(
 public record ProductManagementDto(
     int Id,
     string Name,
+    string Description,
     string CategoryName,
     decimal Price,
+    List<string> Images,
     int StockQuantity,
     bool IsActive,
     DateTime CreatedAt

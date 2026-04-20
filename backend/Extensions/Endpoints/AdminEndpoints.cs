@@ -299,14 +299,36 @@ public static class AdminEndpoints
             return Results.BadRequest(new ApiResponse<object>(false, null, "Invalid status. Valid values: Pending, Confirmed, Shipping, Delivered, Cancelled", new ApiError("INVALID_STATUS", "Invalid status")));
         }
 
-        var order = await db.Orders.FindAsync(new object[] { id }, ct);
+        var order = await db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
         if (order is null)
         {
             return Results.NotFound(new ApiResponse<object>(false, null, "Order not found", new ApiError("NOT_FOUND", "Order not found")));
         }
 
+        var oldStatus = order.Status;
         order.Status = newStatus;
         order.UpdatedAt = DateTime.UtcNow;
+
+        // Restore stock when order is cancelled
+        if (oldStatus != OrderStatus.Cancelled && newStatus == OrderStatus.Cancelled)
+        {
+            var productIds = order.Items.Select(i => i.ProductId).ToList();
+            var products = await db.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, ct);
+
+            foreach (var item in order.Items)
+            {
+                if (products.TryGetValue(item.ProductId, out var product))
+                {
+                    product.StockQuantity += item.Quantity;
+                    product.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+        }
+
         await db.SaveChangesAsync(ct);
 
         // Reload with items
@@ -355,6 +377,7 @@ public static class AdminEndpoints
         var query = db.Products
             .AsNoTracking()
             .Include(p => p.Category)
+            .Include(p => p.Images.OrderBy(i => i.SortOrder))
             .Where(p => !p.IsDeleted);
 
         if (!string.IsNullOrEmpty(search))
@@ -381,8 +404,10 @@ public static class AdminEndpoints
             .Select(p => new ProductManagementDto(
                 p.Id,
                 p.Name,
+                p.Description,
                 p.Category.Name,
                 p.Price,
+                p.Images.Select(i => i.ImageUrl).ToList(),
                 p.StockQuantity,
                 p.IsActive,
                 p.CreatedAt
@@ -412,8 +437,10 @@ public static class AdminEndpoints
         var dto = new ProductManagementDto(
             product.Id,
             product.Name,
+            product.Description,
             product.Category.Name,
             product.Price,
+            product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
             product.IsActive,
             product.CreatedAt
@@ -534,8 +561,10 @@ public static class AdminEndpoints
             var dto = new ProductManagementDto(
                 product.Id,
                 product.Name,
+                product.Description,
                 category.Name,
                 product.Price,
+                product.Images.Select(i => i.ImageUrl).ToList(),
                 product.StockQuantity,
                 product.IsActive,
                 product.CreatedAt
@@ -628,8 +657,10 @@ public static class AdminEndpoints
             var dto = new ProductManagementDto(
                 product.Id,
                 product.Name,
+                product.Description,
                 category.Name,
                 product.Price,
+                product.Images.Select(i => i.ImageUrl).ToList(),
                 product.StockQuantity,
                 product.IsActive,
                 product.CreatedAt
@@ -654,6 +685,7 @@ public static class AdminEndpoints
         CancellationToken ct)
     {
         var product = await db.Products
+            .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
 
         if (product is null)
@@ -677,11 +709,13 @@ public static class AdminEndpoints
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == product.CategoryId, ct);
 
-        var dto = new ProductManagementDto(
+var dto = new ProductManagementDto(
             product.Id,
             product.Name,
-            category?.Name ?? "Unknown",
+            product.Description,
+            product.Category.Name,
             product.Price,
+            product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
             product.IsActive,
             product.CreatedAt
@@ -701,6 +735,7 @@ public static class AdminEndpoints
     {
         var product = await db.Products
             .Include(p => p.Category)
+            .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
 
         if (product is null)
@@ -720,8 +755,10 @@ public static class AdminEndpoints
         var dto = new ProductManagementDto(
             product.Id,
             product.Name,
+            product.Description,
             product.Category.Name,
             product.Price,
+            product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
             product.IsActive,
             product.CreatedAt
@@ -742,6 +779,7 @@ public static class AdminEndpoints
     {
         var product = await db.Products
             .Include(p => p.Category)
+            .Include(p => p.Images)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
 
         if (product is null)
@@ -761,8 +799,10 @@ public static class AdminEndpoints
         var dto = new ProductManagementDto(
             product.Id,
             product.Name,
+            product.Description,
             product.Category.Name,
             product.Price,
+            product.Images.Select(i => i.ImageUrl).ToList(),
             product.StockQuantity,
             product.IsActive,
             product.CreatedAt

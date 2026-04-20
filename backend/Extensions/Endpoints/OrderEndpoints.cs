@@ -76,10 +76,9 @@ public static class OrderEndpoints
             ));
         }
 
-        // Get products and calculate total
+        // Get products with tracking to update stock
         var productIds = request.Items.Select(i => i.ProductId).ToList();
         var products = await db.Products
-            .AsNoTracking()
             .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, ct);
 
@@ -92,12 +91,28 @@ public static class OrderEndpoints
             ));
         }
 
+        // Validate stock and calculate total
         decimal totalAmount = 0;
         var orderItems = new List<OrderItem>();
 
         foreach (var item in request.Items)
         {
             var product = products[item.ProductId];
+
+            // Check stock availability
+            if (product.StockQuantity < item.Quantity)
+            {
+                return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                    Success: false,
+                    Data: null,
+                    Error: new ApiError("INSUFFICIENT_STOCK", $"Sản phẩm {product.Name} không đủ số lượng. Còn {product.StockQuantity} sản phẩm.")
+                ));
+            }
+
+            // Deduct stock immediately
+            product.StockQuantity -= item.Quantity;
+            product.UpdatedAt = DateTime.UtcNow;
+
             var itemTotal = product.Price * item.Quantity;
             totalAmount += itemTotal;
 
