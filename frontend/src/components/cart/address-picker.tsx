@@ -32,6 +32,8 @@ interface AddressPickerProps {
   ward?: string;
   /** Detailed address */
   address?: string;
+  /** Whether the picker is disabled */
+  disabled?: boolean;
   /** Callback when province changes */
   onProvinceChange?: (value: string, name?: string) => void;
   /** Callback when ward changes */
@@ -54,6 +56,7 @@ export function AddressPicker({
   province,
   ward,
   address,
+  disabled = false,
   onProvinceChange,
   onWardChange,
   onAddressChange,
@@ -183,7 +186,7 @@ export function AddressPicker({
         <Select
           value={selectedProvinceCode}
           onValueChange={handleProvinceChange}
-          disabled={loadingProvinces}
+          disabled={loadingProvinces || disabled}
         >
           <SelectTrigger>
             <SelectValue
@@ -213,7 +216,7 @@ export function AddressPicker({
           <Select
             value={selectedWardCode}
             onValueChange={handleWardChange}
-            disabled={loadingWards}
+            disabled={loadingWards || disabled}
           >
             <SelectTrigger>
               <SelectValue
@@ -244,6 +247,7 @@ export function AddressPicker({
           placeholder="Số nhà, tên đường..."
           value={address}
           onChange={(e) => onAddressChange?.(e.target.value)}
+          disabled={disabled}
         />
       </div>
     </div>

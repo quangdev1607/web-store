@@ -136,13 +136,13 @@ public static class AuthEndpoints
         if (user is null || !passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
             return Results.Json(
-                new ApiResponse<object>(false, null, "Invalid email or password", new ApiError("INVALID_CREDENTIALS", "Invalid email or password")),
+                new ApiResponse<object>(false, null, "Email hoặc mật khẩu không đúng", new ApiError("INVALID_CREDENTIALS", "Email hoặc mật khẩu không đúng")),
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
         if (!user.IsActive)
         {
-            return Results.BadRequest(new ApiResponse<object>(false, null, "Account is inactive", new ApiError("INACTIVE_ACCOUNT", "Account is inactive")));
+            return Results.BadRequest(new ApiResponse<object>(false, null, "Tài khoản bị vô hiệu hóa", new ApiError("INACTIVE_ACCOUNT", "Tài khoản bị vô hiệu hóa")));
         }
 
         var token = jwtService.GenerateToken(user.Id, user.Email, user.GetRoles());
@@ -170,7 +170,7 @@ public static class AuthEndpoints
         CancellationToken ct)
     {
         var userIdClaim = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
+
         if (!int.TryParse(userIdClaim, out var userId))
         {
             return Results.Unauthorized();
@@ -210,14 +210,14 @@ public static class AuthEndpoints
         CancellationToken ct)
     {
         var userIdClaim = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
+
         if (!int.TryParse(userIdClaim, out var userId))
         {
             return Results.Unauthorized();
         }
 
         var user = await db.Users.FindAsync(new object[] { userId }, ct);
-        
+
         if (user is null)
         {
             return Results.NotFound(new ApiResponse<object>(false, null, "User not found", new ApiError("NOT_FOUND", "User not found")));
@@ -226,25 +226,25 @@ public static class AuthEndpoints
         // Update fields if provided
         if (request.FirstName is not null)
             user.FirstName = request.FirstName.Trim();
-        
+
         if (request.LastName is not null)
             user.LastName = request.LastName.Trim();
-        
+
         if (request.Phone is not null)
             user.Phone = request.Phone.Trim();
-        
+
         if (request.Address is not null)
             user.Address = request.Address.Trim();
-        
+
         if (request.Province is not null)
             user.Province = request.Province.Trim();
-        
+
         if (request.ProvinceName is not null)
             user.ProvinceName = request.ProvinceName.Trim();
-        
+
         if (request.Ward is not null)
             user.Ward = request.Ward.Trim();
-        
+
         if (request.WardName is not null)
             user.WardName = request.WardName.Trim();
 

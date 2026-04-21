@@ -159,6 +159,7 @@ app.MapCartEndpoints();
 app.MapAdminEndpoints();
 app.MapImageEndpoints();
 app.MapLocationEndpoints();
+app.MapDevEndpoints();
 
 // Health check endpoint
 app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))

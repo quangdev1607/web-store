@@ -2,10 +2,10 @@
  * Auth Store - State management for authentication
  * Uses Zustand for global state
  */
+import * as authApi from '@/api/auth';
+import type { User } from '@/types';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '@/types';
-import * as authApi from '@/api/auth';
 
 /**
  * Auth state interface
@@ -27,7 +27,9 @@ interface AuthState {
     phone: string;
     address: string;
     province: string;
+    provinceName: string;
     ward: string;
+    wardName: string;
   }) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -80,13 +82,31 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
         } catch (error) {
-          set({
-            isLoading: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Đăng nhập thất bại',
-          });
+          set({ isLoading: false });
+
+          // Handle different error status codes
+          if (error && typeof error === 'object' && 'response' in error) {
+            const axiosError = error as { response?: { status: number; data?: { message?: string } } };
+            const status = axiosError.response?.status;
+            const message = axiosError.response?.data?.message;
+
+            if (status === 400) {
+              // Account disabled
+              set({ error: message });
+            } else if (status === 401) {
+              // Invalid credentials
+              set({ error: message });
+            } else {
+              set({ error: message });
+            }
+          } else {
+            set({
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Đăng nhập thất bại',
+            });
+          }
           throw error;
         }
       },

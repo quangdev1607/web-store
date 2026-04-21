@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { AddressPicker } from "@/components/cart/address-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1063,13 +1064,15 @@ function UsersContent() {
         pageSize: 20,
     });
     const [totalPages, setTotalPages] = useState(0);
-    const [formData, setFormData] = useState<UpdateUserRequest>({
+    const [formData, setFormData] = useState<UpdateUserRequest & { provinceName?: string; wardName?: string }>({
         firstName: "",
         lastName: "",
         phone: "",
         address: "",
         province: "",
+        provinceName: "",
         ward: "",
+        wardName: "",
         roles: [],
     });
     const [newPassword, setNewPassword] = useState("");
@@ -1116,7 +1119,9 @@ function UsersContent() {
             phone: user.phone || "",
             address: user.address || "",
             province: user.province || "",
+            provinceName: user.provinceName || "",
             ward: user.ward || "",
+            wardName: user.wardName || "",
             roles: user.roles || [],
         });
         setIsEditModalOpen(true);
@@ -1163,7 +1168,9 @@ function UsersContent() {
                 phone: formData.phone || undefined,
                 address: formData.address || undefined,
                 province: formData.province || undefined,
+                provinceName: formData.provinceName || undefined,
                 ward: formData.ward || undefined,
+                wardName: formData.wardName || undefined,
                 roles: formData.roles,
             });
             closeEditModal();
@@ -1405,30 +1412,19 @@ function UsersContent() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="address">Địa chỉ</Label>
-                            <Input
-                                id="address"
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            <Label>Địa chỉ</Label>
+                            <AddressPicker
+                                province={formData.province}
+                                ward={formData.ward}
+                                address={formData.address}
+                                onProvinceChange={(value, name) => {
+                                    setFormData({ ...formData, province: value, provinceName: name || "" });
+                                }}
+                                onWardChange={(value, name) => {
+                                    setFormData({ ...formData, ward: value, wardName: name || "" });
+                                }}
+                                onAddressChange={(value) => setFormData({ ...formData, address: value })}
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="province">Tỉnh/TP</Label>
-                                <Input
-                                    id="province"
-                                    value={formData.province}
-                                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="ward">Phường/Xã</Label>
-                                <Input
-                                    id="ward"
-                                    value={formData.ward}
-                                    onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
-                                />
-                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label>Vai trò</Label>

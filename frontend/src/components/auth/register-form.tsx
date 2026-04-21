@@ -30,7 +30,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         lastName: "",
         phone: "",
         province: "",
+        provinceName: "",
         ward: "",
+        wardName: "",
         address: "",
     });
 
@@ -65,7 +67,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 phone: formData.phone,
                 address: formData.address,
                 province: formData.province,
+                provinceName: formData.provinceName,
                 ward: formData.ward,
+                wardName: formData.wardName,
             });
             onSuccess?.();
             navigate("/");
@@ -184,8 +188,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                             province={formData.province}
                             ward={formData.ward}
                             address={formData.address}
-                            onProvinceChange={(value) => handleChange("province", value)}
-                            onWardChange={(value) => handleChange("ward", value)}
+                            onProvinceChange={(value, name) => {
+                                handleChange("province", value);
+                                if (name) handleChange("provinceName", name);
+                            }}
+                            onWardChange={(value, name) => {
+                                handleChange("ward", value);
+                                if (name) handleChange("wardName", name);
+                            }}
                             onAddressChange={(value) => handleChange("address", value)}
                         />
                     </div>

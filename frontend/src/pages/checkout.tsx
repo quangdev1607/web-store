@@ -243,6 +243,7 @@ export function CheckoutPage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     className="rounded-xl"
+                    disabled
                   />
                   {errors.name && (
                     <p className="text-sm text-destructive">{errors.name}</p>
@@ -255,6 +256,7 @@ export function CheckoutPage() {
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     className="rounded-xl"
+                    disabled
                   />
                   {errors.phone && (
                     <p className="text-sm text-destructive">{errors.phone}</p>
@@ -268,6 +270,7 @@ export function CheckoutPage() {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className="rounded-xl"
+                    disabled
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">{errors.email}</p>

@@ -182,6 +182,7 @@ export function ProfilePage() {
                 province={formData.province}
                 ward={formData.ward}
                 address={formData.address}
+                disabled={!isEditing}
                 onProvinceChange={(value, name) => {
                   handleChange('province', value);
                   if (name) handleChange('provinceName', name);
