@@ -77,3 +77,11 @@ public record PaymentStatusDto(
     string? PaymentUrl,
     DateTime? PaidAt
 );
+
+public record CreatePaymentResponse(
+    int OrderId,
+    string OrderCode,
+    string PaymentMethod,
+    string PaymentStatus,
+    string PaymentUrl
+);

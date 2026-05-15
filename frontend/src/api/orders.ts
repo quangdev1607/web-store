@@ -8,6 +8,7 @@ import type {
   CreateOrderRequest,
   CreateOrderResponse,
   PaymentStatusResponse,
+  CreatePaymentResponse,
   PaginatedOrders,
   OrderFilters,
 } from '@/types';
@@ -44,6 +45,19 @@ export async function getOrderPaymentStatus(
 ): Promise<PaymentStatusResponse> {
   const response = await axios.get<ApiResponse<PaymentStatusResponse>>(
     `/orders/${id}/payment-status`
+  );
+  return response.data.data;
+}
+
+/**
+ * Create a new payOS payment link for an existing unpaid order
+ * POST /api/orders/{id}/payments/payos
+ */
+export async function createPayOsPayment(
+  id: number
+): Promise<CreatePaymentResponse> {
+  const response = await axios.post<ApiResponse<CreatePaymentResponse>>(
+    `/orders/${id}/payments/payos`
   );
   return response.data.data;
 }

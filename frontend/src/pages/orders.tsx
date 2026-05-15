@@ -2,7 +2,7 @@
  * Orders Page
  * Displays user's order history with API integration
  */
-import { getMyOrders, getOrderById } from "@/api/orders";
+import { createPayOsPayment, getMyOrders, getOrderById } from "@/api/orders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/modal";
@@ -95,6 +95,16 @@ export function OrdersPage() {
         [fetchOrderDetails],
     );
 
+    const handlePayNow = useCallback(async (order: Order) => {
+        try {
+            const payment = await createPayOsPayment(order.id);
+            window.location.assign(payment.paymentUrl);
+        } catch (err) {
+            console.error("Failed to create payOS payment:", err);
+            setError("Không thể tạo link thanh toán payOS. Vui lòng thử lại sau.");
+        }
+    }, []);
+
     // Handle filter change
     const handleFilterChange = (key: keyof OrderFilters, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -175,7 +185,12 @@ export function OrdersPage() {
             ) : (
                 <div className="space-y-4">
                     {orders.map((order) => (
-                        <OrderCard key={order.id} order={order} onViewDetails={handleViewDetails} />
+                        <OrderCard
+                            key={order.id}
+                            order={order}
+                            onPayNow={handlePayNow}
+                            onViewDetails={handleViewDetails}
+                        />
                     ))}
                 </div>
             )}
@@ -229,7 +244,17 @@ export function OrdersPage() {
 /**
  * Order card component
  */
-function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (order: Order) => void }) {
+function OrderCard({
+    order,
+    onPayNow,
+    onViewDetails,
+}: {
+    order: Order;
+    onPayNow: (order: Order) => void;
+    onViewDetails: (order: Order) => void;
+}) {
+    const canPayNow = order.paymentMethod === "payos" && order.paymentStatus !== "paid";
+
     return (
         <div className="border rounded-lg p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -245,6 +270,11 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
+                    {canPayNow && (
+                        <Button size="sm" onClick={() => onPayNow(order)}>
+                            Thanh toán
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => onViewDetails(order)}>
                         Xem chi tiết
                     </Button>

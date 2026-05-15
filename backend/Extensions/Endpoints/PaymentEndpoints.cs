@@ -19,6 +19,13 @@ public static class PaymentEndpoints
             .Produces<ApiResponse<object>>()
             .ProducesProblem(400);
 
+        app.MapPost("/api/orders/{id:int}/payments/payos", CreatePayOsPaymentForOrder)
+            .WithTags("Payments")
+            .WithName("CreatePayOsPaymentForOrder")
+            .Produces<ApiResponse<CreatePaymentResponse>>()
+            .ProducesProblem(400)
+            .ProducesProblem(404);
+
         app.MapGet("/api/orders/{id:int}/payment-status", GetOrderPaymentStatus)
             .WithTags("Payments")
             .WithName("GetOrderPaymentStatus")
@@ -63,10 +70,14 @@ public static class PaymentEndpoints
             ));
         }
 
+        var paymentLinkId = GetString(data, "paymentLinkId");
         var payment = await db.Payments
             .Include(p => p.Order)
             .ThenInclude(o => o.Items)
-            .FirstOrDefaultAsync(p => p.Provider == PaymentProvider.PayOs && p.ProviderOrderCode == providerOrderCode, ct);
+            .FirstOrDefaultAsync(p =>
+                p.Provider == PaymentProvider.PayOs &&
+                (p.ProviderOrderCode == providerOrderCode ||
+                 (paymentLinkId != null && p.ProviderPaymentLinkId == paymentLinkId)), ct);
 
         if (payment is null)
         {
@@ -119,6 +130,80 @@ public static class PaymentEndpoints
         await db.SaveChangesAsync(ct);
 
         return Results.Ok(new ApiResponse<object>(true, new { payment.Id, payment.Status }, "Webhook payOS đã được xử lý"));
+    }
+
+    private static async Task<IResult> CreatePayOsPaymentForOrder(
+        int id,
+        AppDbContext db,
+        IPayOsService payOsService,
+        CancellationToken ct)
+    {
+        if (!payOsService.IsConfigured)
+        {
+            return Results.BadRequest(new ApiResponse<CreatePaymentResponse>(
+                false,
+                null,
+                "payOS chưa được cấu hình",
+                new ApiError("PAYOS_NOT_CONFIGURED", "Vui lòng thiết lập ClientId, ApiKey và ChecksumKey trước khi tạo link thanh toán.")
+            ));
+        }
+
+        var order = await db.Orders
+            .Include(o => o.Payments)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
+
+        if (order is null)
+        {
+            return Results.NotFound(new ApiResponse<CreatePaymentResponse>(
+                false,
+                null,
+                "Đơn hàng không tồn tại",
+                new ApiError("ORDER_NOT_FOUND", "Đơn hàng không tồn tại")
+            ));
+        }
+
+        if (order.PaymentStatus == PaymentStatus.Paid)
+        {
+            return Results.BadRequest(new ApiResponse<CreatePaymentResponse>(
+                false,
+                null,
+                "Đơn hàng đã thanh toán",
+                new ApiError("ORDER_ALREADY_PAID", "Không thể tạo link thanh toán mới cho đơn đã thanh toán")
+            ));
+        }
+
+        var paymentLink = await payOsService.CreatePaymentLinkAsync(order, ct);
+        var payment = new Payment
+        {
+            OrderId = order.Id,
+            Provider = PaymentProvider.PayOs,
+            Method = PaymentMethod.PayOs,
+            Status = PaymentStatus.Pending,
+            ProviderOrderCode = paymentLink.ProviderOrderCode,
+            ProviderPaymentLinkId = paymentLink.PaymentLinkId,
+            CheckoutUrl = paymentLink.CheckoutUrl,
+            Amount = order.TotalAmount,
+            ExpiredAt = paymentLink.ExpiredAt
+        };
+
+        db.Payments.Add(payment);
+        await db.SaveChangesAsync(ct);
+
+        order.PaymentMethod = PaymentMethod.PayOs;
+        order.PaymentStatus = PaymentStatus.Pending;
+        order.ActivePaymentId = payment.Id;
+        order.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        var response = new CreatePaymentResponse(
+            order.Id,
+            order.OrderCode,
+            order.PaymentMethod.ToString().ToLower(),
+            order.PaymentStatus.ToString().ToLower(),
+            payment.CheckoutUrl!
+        );
+
+        return Results.Ok(new ApiResponse<CreatePaymentResponse>(true, response, "Tạo link thanh toán payOS thành công"));
     }
 
     private static async Task<IResult> GetOrderPaymentStatus(

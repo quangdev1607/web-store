@@ -106,6 +106,14 @@ export interface PaymentStatusResponse {
   paidAt?: string | null;
 }
 
+export interface CreatePaymentResponse {
+  orderId: number;
+  orderCode: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentUrl: string;
+}
+
 /**
  * Paginated orders response
  */

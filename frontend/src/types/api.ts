@@ -69,6 +69,8 @@ export interface CategoryFilters {
  */
 export interface OrderFilters {
   status?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
   search?: string;
   sortBy?: string;
   page?: number;

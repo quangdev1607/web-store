@@ -243,6 +243,8 @@ public static class AdminEndpoints
 
     private static async Task<IResult> GetAllOrders(
         string? status = null,
+        string? paymentMethod = null,
+        string? paymentStatus = null,
         string? search = null,
         string? sortBy = null,
         int page = 1,
@@ -262,6 +264,16 @@ public static class AdminEndpoints
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, true, out var orderStatus))
         {
             query = query.Where(o => o.Status == orderStatus);
+        }
+
+        if (!string.IsNullOrEmpty(paymentMethod) && Enum.TryParse<PaymentMethod>(paymentMethod, true, out var parsedPaymentMethod))
+        {
+            query = query.Where(o => o.PaymentMethod == parsedPaymentMethod);
+        }
+
+        if (!string.IsNullOrEmpty(paymentStatus) && Enum.TryParse<PaymentStatus>(paymentStatus, true, out var parsedPaymentStatus))
+        {
+            query = query.Where(o => o.PaymentStatus == parsedPaymentStatus);
         }
 
         if (!string.IsNullOrEmpty(search))
@@ -366,6 +378,30 @@ public static class AdminEndpoints
         }
 
         var oldStatus = order.Status;
+
+        if (newStatus == OrderStatus.Shipping)
+        {
+            if (order.PaymentMethod == PaymentMethod.PayOs && order.PaymentStatus != PaymentStatus.Paid)
+            {
+                return Results.BadRequest(new ApiResponse<object>(
+                    false,
+                    null,
+                    "Không thể giao đơn payOS chưa thanh toán",
+                    new ApiError("PAYMENT_REQUIRED", "Đơn payOS phải thanh toán thành công trước khi chuyển sang đang giao")
+                ));
+            }
+
+            if (order.PaymentMethod == PaymentMethod.Cod && oldStatus == OrderStatus.Pending)
+            {
+                return Results.BadRequest(new ApiResponse<object>(
+                    false,
+                    null,
+                    "Đơn COD cần được xác nhận trước khi giao",
+                    new ApiError("CONFIRMATION_REQUIRED", "Vui lòng chuyển đơn COD sang đã xác nhận trước khi giao")
+                ));
+            }
+        }
+
         order.Status = newStatus;
         order.UpdatedAt = DateTime.UtcNow;
 

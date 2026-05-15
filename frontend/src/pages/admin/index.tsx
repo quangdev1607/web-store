@@ -369,6 +369,39 @@ function OrdersContent({
                     </SelectContent>
                 </Select>
 
+                {/* Payment Method Filter */}
+                <Select
+                    value={filters.paymentMethod || "all"}
+                    onValueChange={(value) => handleFilterChange("paymentMethod", value === "all" ? "" : value)}
+                >
+                    <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Phương thức" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="cod">COD</SelectItem>
+                        <SelectItem value="payos">payOS</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {/* Payment Status Filter */}
+                <Select
+                    value={filters.paymentStatus || "all"}
+                    onValueChange={(value) => handleFilterChange("paymentStatus", value === "all" ? "" : value)}
+                >
+                    <SelectTrigger className="w-44">
+                        <SelectValue placeholder="Thanh toán" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ thanh toán</SelectItem>
+                        <SelectItem value="paid">Đã thanh toán</SelectItem>
+                        <SelectItem value="failed">Thất bại</SelectItem>
+                        <SelectItem value="cancelled">Đã hủy</SelectItem>
+                        <SelectItem value="expired">Hết hạn</SelectItem>
+                    </SelectContent>
+                </Select>
+
                 {/* Sort */}
                 <Select
                     value={filters.sortBy || "date-desc"}

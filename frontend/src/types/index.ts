@@ -46,6 +46,7 @@ export type {
   CreateOrderRequest,
   CreateOrderResponse,
   PaymentStatusResponse,
+  CreatePaymentResponse,
   PaginatedOrders,
 } from './order';
 

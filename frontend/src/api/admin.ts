@@ -42,6 +42,8 @@ export async function getAdminOrders(
   // Filter out empty values to ensure API receives valid params
   const params: Record<string, string | number> = {};
   if (filters?.status) params.status = filters.status;
+  if (filters?.paymentMethod) params.paymentMethod = filters.paymentMethod;
+  if (filters?.paymentStatus) params.paymentStatus = filters.paymentStatus;
   if (filters?.search) params.search = filters.search;
   if (filters?.sortBy) params.sortBy = filters.sortBy;
   if (filters?.page) params.page = filters.page;
