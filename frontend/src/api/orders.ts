@@ -7,6 +7,7 @@ import type {
   Order,
   CreateOrderRequest,
   CreateOrderResponse,
+  PaymentStatusResponse,
   PaginatedOrders,
   OrderFilters,
 } from '@/types';
@@ -31,6 +32,19 @@ export async function createOrder(
  */
 export async function getOrderById(id: number): Promise<Order> {
   const response = await axios.get<ApiResponse<Order>>(`/orders/${id}`);
+  return response.data.data;
+}
+
+/**
+ * Get payment status for an order
+ * GET /api/orders/{id}/payment-status
+ */
+export async function getOrderPaymentStatus(
+  id: number
+): Promise<PaymentStatusResponse> {
+  const response = await axios.get<ApiResponse<PaymentStatusResponse>>(
+    `/orders/${id}/payment-status`
+  );
   return response.data.data;
 }
 

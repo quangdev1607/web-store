@@ -45,7 +45,7 @@ import type {
     User,
     UserFilters,
 } from "@/types";
-import { getOrderStatusLabel } from "@/types/order";
+import { getOrderStatusLabel, getPaymentStatusLabel, PAYMENT_METHOD_LABELS } from "@/types/order";
 import { KeyRound, PencilIcon, PlusIcon, RotateCcwIcon, ShieldBan, ShieldCheck, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -403,6 +403,10 @@ function OrdersContent({
                                         </div>
                                         <p className="text-sm text-muted-foreground">
                                             {order.customerName} • {order.customerPhone} •{formatDate(order.createdAt)}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {PAYMENT_METHOD_LABELS[order.paymentMethod]} •{" "}
+                                            {getPaymentStatusLabel(order.paymentStatus)}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-4">

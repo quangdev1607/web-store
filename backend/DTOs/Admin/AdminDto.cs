@@ -17,6 +17,8 @@ public record OrderSummaryDto(
     string CustomerName,
     decimal TotalAmount,
     string Status,
+    string PaymentMethod,
+    string PaymentStatus,
     DateTime CreatedAt
 );
 

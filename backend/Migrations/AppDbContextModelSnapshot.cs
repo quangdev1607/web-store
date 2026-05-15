@@ -120,6 +120,9 @@ namespace TiemBanhBeYeu.Api.Migrations
 
             modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Order", b =>
                 {
+                    b.Property<int?>("ActivePaymentId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
@@ -150,6 +153,19 @@ namespace TiemBanhBeYeu.Api.Migrations
                     b.Property<string>("OrderCode")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Province")
@@ -183,6 +199,8 @@ namespace TiemBanhBeYeu.Api.Migrations
 
                     b.HasIndex("OrderCode")
                         .IsUnique();
+
+                    b.HasIndex("PaymentStatus");
 
                     b.HasIndex("Status");
 
@@ -222,6 +240,77 @@ namespace TiemBanhBeYeu.Api.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems", (string)null);
+                });
+
+            modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CheckoutUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ProviderOrderCode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProviderPaymentLinkId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderTransactionReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WebhookPayload")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProviderOrderCode");
+
+                    b.HasIndex("ProviderPaymentLinkId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Product", b =>
@@ -494,6 +583,17 @@ namespace TiemBanhBeYeu.Api.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("TiemBanhBeYeu.Api.Domain.Entities.Order", "Order")
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Product", b =>
                 {
                     b.HasOne("TiemBanhBeYeu.Api.Domain.Entities.Category", "Category")
@@ -540,6 +640,8 @@ namespace TiemBanhBeYeu.Api.Migrations
             modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("TiemBanhBeYeu.Api.Domain.Entities.Product", b =>

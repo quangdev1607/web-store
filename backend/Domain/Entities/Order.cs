@@ -19,10 +19,15 @@ public class Order
     // Order Info
     public decimal TotalAmount { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cod;
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+    public int? ActivePaymentId { get; set; }
+    public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }
 
 public enum OrderStatus
@@ -32,4 +37,25 @@ public enum OrderStatus
     Shipping,
     Delivered,
     Cancelled
+}
+
+public enum PaymentMethod
+{
+    Cod,
+    PayOs
+}
+
+public enum PaymentProvider
+{
+    Cod,
+    PayOs
+}
+
+public enum PaymentStatus
+{
+    Pending,
+    Paid,
+    Failed,
+    Cancelled,
+    Expired
 }

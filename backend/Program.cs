@@ -19,6 +19,8 @@ builder.WebHost.ConfigureKestrel(options =>
 // Configure JWT settings
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<PayOsSettings>(
+    builder.Configuration.GetSection("PayOs"));
 
 var jwtSettings = builder.Configuration
     .GetSection("JwtSettings")
@@ -117,6 +119,12 @@ builder.Services.AddCors(options =>
 // Register custom services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddHttpClient<IPayOsService, PayOsService>((sp, client) =>
+{
+    var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PayOsSettings>>().Value;
+    client.BaseAddress = new Uri(settings.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 // Configure Cloudinary
 builder.Services.Configure<CloudinarySettings>(
@@ -154,6 +162,7 @@ app.UseAuthorization();
 app.MapProductEndpoints();
 app.MapCategoryEndpoints();
 app.MapOrderEndpoints();
+app.MapPaymentEndpoints();
 app.MapAuthEndpoints();
 app.MapCartEndpoints();
 app.MapAdminEndpoints();

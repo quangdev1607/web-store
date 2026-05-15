@@ -11,7 +11,8 @@ import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { useAuthStore } from '@/stores/auth-store';
 import { createOrder } from '@/api/orders';
-import { Check, CreditCard, Truck, Loader2 } from 'lucide-react';
+import type { PaymentMethod } from '@/types/order';
+import { Check, CreditCard, Truck, Loader2, QrCode, Banknote } from 'lucide-react';
 
 // ============================================================================
 // Type Definitions
@@ -38,6 +39,7 @@ export function CheckoutPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('payos');
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderResult, setOrderResult] = useState<{
     orderId: number;
@@ -123,6 +125,7 @@ export function CheckoutPage() {
           ward: userAddress!.ward,
           address: userAddress!.address,
         },
+        paymentMethod,
         items: items.map((item) => ({
           productId: Number(item.product.id),
           quantity: item.quantity,
@@ -132,7 +135,11 @@ export function CheckoutPage() {
       // Call backend API
       const result = await createOrder(orderData);
 
-      // Clear cart and show success
+      if (result.paymentMethod === 'payos' && result.paymentUrl) {
+        window.location.assign(result.paymentUrl);
+        return;
+      }
+
       clearCart();
       setOrderResult(result);
       setOrderComplete(true);
@@ -310,9 +317,48 @@ export function CheckoutPage() {
                 <CreditCard className="w-5 h-5" />
                 Phương Thức Thanh Toán
               </h2>
-              <div className="border-2 border-primary/30 rounded-xl p-4 bg-primary/5">
+              <div
+                className={`border-2 rounded-xl p-4 cursor-pointer transition ${
+                  paymentMethod === 'payos'
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
+                onClick={() => setPaymentMethod('payos')}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary" />
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 ${
+                      paymentMethod === 'payos'
+                        ? 'border-primary bg-primary'
+                        : 'border-muted-foreground'
+                    }`}
+                  />
+                  <QrCode className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">VietQR qua payOS</p>
+                    <p className="text-sm text-muted-foreground">
+                      Quét mã QR ngân hàng, hệ thống tự cập nhật khi thanh toán
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`border-2 rounded-xl p-4 cursor-pointer transition ${
+                  paymentMethod === 'cod'
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-border hover:border-primary/30'
+                }`}
+                onClick={() => setPaymentMethod('cod')}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 ${
+                      paymentMethod === 'cod'
+                        ? 'border-primary bg-primary'
+                        : 'border-muted-foreground'
+                    }`}
+                  />
+                  <Banknote className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">Thanh Toán Khi Nhận Hàng (COD)</p>
                     <p className="text-sm text-muted-foreground">
@@ -387,6 +433,8 @@ export function CheckoutPage() {
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Đang xử lý...
                 </>
+              ) : paymentMethod === 'payos' ? (
+                `Thanh Toán Qua payOS - ${formatPrice(totalPrice)}`
               ) : (
                 `Đặt Hàng Ngay - ${formatPrice(totalPrice)}`
               )}

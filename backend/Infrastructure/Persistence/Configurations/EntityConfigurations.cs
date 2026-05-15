@@ -80,11 +80,40 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         
         builder.Property(o => o.TotalAmount).HasPrecision(18, 2);
         builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(o => o.PaymentMethod).HasConversion<string>().HasMaxLength(20);
+        builder.Property(o => o.PaymentStatus).HasConversion<string>().HasMaxLength(20);
 
         builder.HasIndex(o => o.OrderCode).IsUnique();
         builder.HasIndex(o => o.CustomerEmail);
         builder.HasIndex(o => o.Status);
+        builder.HasIndex(o => o.PaymentStatus);
         builder.HasIndex(o => o.UserId);
+    }
+}
+
+public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
+{
+    public void Configure(EntityTypeBuilder<Payment> builder)
+    {
+        builder.ToTable("Payments");
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Provider).HasConversion<string>().HasMaxLength(20);
+        builder.Property(p => p.Method).HasConversion<string>().HasMaxLength(20);
+        builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(p => p.ProviderPaymentLinkId).HasMaxLength(100);
+        builder.Property(p => p.ProviderTransactionReference).HasMaxLength(100);
+        builder.Property(p => p.CheckoutUrl).HasMaxLength(1000);
+        builder.Property(p => p.Amount).HasPrecision(18, 2);
+
+        builder.HasOne(p => p.Order)
+            .WithMany(o => o.Payments)
+            .HasForeignKey(p => p.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(p => p.OrderId);
+        builder.HasIndex(p => p.ProviderOrderCode);
+        builder.HasIndex(p => p.ProviderPaymentLinkId);
+        builder.HasIndex(p => p.Status);
     }
 }
 

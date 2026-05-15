@@ -13,6 +13,15 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+export type PaymentMethod = 'cod' | 'payos';
+
+export type PaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'expired';
+
 /**
  * Shipping address for an order
  */
@@ -53,6 +62,9 @@ export interface Order {
   shippingAddress: ShippingAddress;
   totalAmount: number;
   status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentUrl?: string | null;
   items: OrderItem[];
   createdAt: string;
 }
@@ -63,6 +75,7 @@ export interface Order {
 export interface CreateOrderRequest {
   customerInfo: CustomerInfo;
   shippingAddress: ShippingAddress;
+  paymentMethod: PaymentMethod;
   items: Array<{
     productId: number;
     quantity: number;
@@ -76,7 +89,21 @@ export interface CreateOrderResponse {
   orderId: number;
   orderCode: string;
   totalAmount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentUrl?: string | null;
   estimatedDelivery: string;
+}
+
+export interface PaymentStatusResponse {
+  orderId: number;
+  orderCode: string;
+  totalAmount: number;
+  orderStatus: OrderStatus;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentUrl?: string | null;
+  paidAt?: string | null;
 }
 
 /**
@@ -112,10 +139,28 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   cancelled: 'destructive',
 };
 
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cod: 'Thanh toán khi nhận hàng',
+  payos: 'VietQR qua payOS',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: 'Chờ thanh toán',
+  paid: 'Đã thanh toán',
+  failed: 'Thanh toán thất bại',
+  cancelled: 'Đã hủy thanh toán',
+  expired: 'Thanh toán hết hạn',
+};
+
 /**
  * Get display label for order status
  */
 export function getOrderStatusLabel(status: OrderStatus): string {
   const lowerStatus = status.toLowerCase();
   return ORDER_STATUS_LABELS[lowerStatus as OrderStatus] || status;
+}
+
+export function getPaymentStatusLabel(status: PaymentStatus): string {
+  const lowerStatus = status.toLowerCase();
+  return PAYMENT_STATUS_LABELS[lowerStatus as PaymentStatus] || status;
 }

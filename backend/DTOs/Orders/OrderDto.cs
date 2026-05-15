@@ -4,6 +4,7 @@ namespace TiemBanhBeYeu.Api.DTOs.Orders;
 public record CreateOrderRequest(
     CustomerInfo CustomerInfo,
     ShippingAddress ShippingAddress,
+    string? PaymentMethod,
     List<OrderItemRequest> Items
 );
 
@@ -35,6 +36,9 @@ public record OrderDto(
     ShippingAddressDto ShippingAddress,
     decimal TotalAmount,
     string Status,
+    string PaymentMethod,
+    string PaymentStatus,
+    string? PaymentUrl,
     DateTime CreatedAt,
     List<OrderItemDto> Items
 );
@@ -57,5 +61,19 @@ public record CreateOrderResponse(
     int OrderId,
     string OrderCode,
     decimal TotalAmount,
+    string PaymentMethod,
+    string PaymentStatus,
+    string? PaymentUrl,
     DateTime EstimatedDelivery
+);
+
+public record PaymentStatusDto(
+    int OrderId,
+    string OrderCode,
+    decimal TotalAmount,
+    string OrderStatus,
+    string PaymentMethod,
+    string PaymentStatus,
+    string? PaymentUrl,
+    DateTime? PaidAt
 );

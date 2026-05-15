@@ -5,6 +5,7 @@ using TiemBanhBeYeu.Api.DTOs;
 using TiemBanhBeYeu.Api.DTOs.Admin;
 using TiemBanhBeYeu.Api.DTOs.Orders;
 using TiemBanhBeYeu.Api.Infrastructure.Persistence;
+using TiemBanhBeYeu.Api.Infrastructure.Services;
 
 namespace TiemBanhBeYeu.Api.Extensions.Endpoints;
 
@@ -37,6 +38,7 @@ public static class OrderEndpoints
     private static async Task<IResult> CreateOrder(
         CreateOrderRequest request,
         AppDbContext db = null!,
+        IPayOsService payOsService = null!,
         CancellationToken ct = default)
     {
         // Validate request
@@ -76,6 +78,30 @@ public static class OrderEndpoints
             ));
         }
 
+        var requestedPaymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethod)
+            ? PaymentMethod.Cod
+            : Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var parsedPaymentMethod)
+                ? parsedPaymentMethod
+                : (PaymentMethod?)null;
+
+        if (requestedPaymentMethod is null)
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("INVALID_PAYMENT_METHOD", "Phương thức thanh toán không hợp lệ. Hỗ trợ: cod, payos")
+            ));
+        }
+
+        if (requestedPaymentMethod == PaymentMethod.PayOs && !payOsService.IsConfigured)
+        {
+            return Results.BadRequest(new ApiResponse<CreateOrderResponse>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("PAYOS_NOT_CONFIGURED", "payOS chưa được cấu hình. Vui lòng thiết lập ClientId, ApiKey và ChecksumKey trước khi bật thanh toán online.")
+            ));
+        }
+
         // Get products with tracking to update stock
         var productIds = request.Items.Select(i => i.ProductId).ToList();
         var products = await db.Products
@@ -90,6 +116,8 @@ public static class OrderEndpoints
                 Error: new ApiError("PRODUCT_NOT_FOUND", "Một hoặc nhiều sản phẩm không tồn tại")
             ));
         }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         // Validate stock and calculate total
         decimal totalAmount = 0;
@@ -140,16 +168,48 @@ public static class OrderEndpoints
             Address = request.ShippingAddress.Address,
             TotalAmount = totalAmount,
             Status = OrderStatus.Pending,
+            PaymentMethod = requestedPaymentMethod.Value,
+            PaymentStatus = PaymentStatus.Pending,
             Items = orderItems
         };
 
         db.Orders.Add(order);
         await db.SaveChangesAsync(ct);
 
+        string? paymentUrl = null;
+        var payment = new Payment
+        {
+            OrderId = order.Id,
+            Provider = requestedPaymentMethod == PaymentMethod.PayOs ? PaymentProvider.PayOs : PaymentProvider.Cod,
+            Method = requestedPaymentMethod.Value,
+            Status = PaymentStatus.Pending,
+            Amount = order.TotalAmount
+        };
+
+        if (requestedPaymentMethod == PaymentMethod.PayOs)
+        {
+            var paymentLink = await payOsService.CreatePaymentLinkAsync(order, ct);
+            payment.ProviderOrderCode = paymentLink.ProviderOrderCode;
+            payment.ProviderPaymentLinkId = paymentLink.PaymentLinkId;
+            payment.CheckoutUrl = paymentLink.CheckoutUrl;
+            payment.ExpiredAt = paymentLink.ExpiredAt;
+            paymentUrl = paymentLink.CheckoutUrl;
+        }
+
+        db.Payments.Add(payment);
+        await db.SaveChangesAsync(ct);
+
+        order.ActivePaymentId = payment.Id;
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
         var response = new CreateOrderResponse(
             OrderId: order.Id,
             OrderCode: order.OrderCode,
             TotalAmount: order.TotalAmount,
+            PaymentMethod: order.PaymentMethod.ToString().ToLower(),
+            PaymentStatus: order.PaymentStatus.ToString().ToLower(),
+            PaymentUrl: paymentUrl,
             EstimatedDelivery: DateTime.UtcNow.AddDays(3)
         );
 
@@ -168,6 +228,7 @@ public static class OrderEndpoints
         var order = await db.Orders
             .AsNoTracking()
             .Include(o => o.Items)
+            .Include(o => o.Payments)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
         if (order is null)
@@ -192,6 +253,11 @@ public static class OrderEndpoints
             ),
             order.TotalAmount,
             order.Status.ToString().ToLower(),
+            order.PaymentMethod.ToString().ToLower(),
+            order.PaymentStatus.ToString().ToLower(),
+            order.Payments
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefault(p => p.Id == order.ActivePaymentId)?.CheckoutUrl,
             order.CreatedAt,
             order.Items.Select(i => new OrderItemDto(
                 i.ProductId,
@@ -259,6 +325,8 @@ public static class OrderEndpoints
                 o.CustomerName,
                 o.TotalAmount,
                 o.Status.ToString().ToLower(),
+                o.PaymentMethod.ToString().ToLower(),
+                o.PaymentStatus.ToString().ToLower(),
                 o.CreatedAt
             ))
             .ToListAsync(ct);

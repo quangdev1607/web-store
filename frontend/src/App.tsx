@@ -13,6 +13,7 @@ import {
   ProductsPage,
   CartPage,
   CheckoutPage,
+  PaymentResultPage,
   ProductDetailPage,
   NotFoundPage,
   LoginPage,
@@ -47,6 +48,7 @@ function App() {
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/payment/result" element={<PaymentResultPage />} />
 
             {/* Auth routes */}
             <Route path="/login" element={<LoginPage />} />

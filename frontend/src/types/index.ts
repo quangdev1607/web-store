@@ -37,16 +37,25 @@ export type {
 // Order types
 export type {
   OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
   ShippingAddress,
   CustomerInfo,
   OrderItem,
   Order,
   CreateOrderRequest,
   CreateOrderResponse,
+  PaymentStatusResponse,
   PaginatedOrders,
+} from './order';
+
+export {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_COLORS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_LABELS,
   getOrderStatusLabel,
+  getPaymentStatusLabel,
 } from './order';
 
 // API types

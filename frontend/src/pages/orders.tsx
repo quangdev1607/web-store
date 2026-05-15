@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import type { Order, OrderStatus } from "@/types/order";
 import type { OrderFilters } from "@/types/api";
 import type { PaginatedOrders } from "@/types/order";
-import { getOrderStatusLabel } from "@/types/order";
+import { getOrderStatusLabel, getPaymentStatusLabel, PAYMENT_METHOD_LABELS } from "@/types/order";
 import { RotateCcwIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
@@ -239,6 +239,9 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
                         <Badge variant={getBadgeVariant(order.status)}>{getOrderStatusLabel(order.status)}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {PAYMENT_METHOD_LABELS[order.paymentMethod]} • {getPaymentStatusLabel(order.paymentStatus)}
+                    </p>
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
@@ -297,6 +300,10 @@ function OrderDetailContent({ order }: { order: Order }) {
                     <span>{formatDate(order.createdAt)}</span>
                     <span className="text-muted-foreground">Tình trạng:</span>
                     <Badge variant={getBadgeVariant(order.status)}>{getOrderStatusLabel(order.status)}</Badge>
+                    <span className="text-muted-foreground">Thanh toán:</span>
+                    <span>
+                        {PAYMENT_METHOD_LABELS[order.paymentMethod]} • {getPaymentStatusLabel(order.paymentStatus)}
+                    </span>
                     <span className="text-muted-foreground">Tổng tiền:</span>
                     <span className="font-semibold text-primary">{formatPrice(order.totalAmount)}</span>
                 </div>

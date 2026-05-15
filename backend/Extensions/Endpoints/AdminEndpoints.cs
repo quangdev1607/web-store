@@ -221,6 +221,8 @@ public static class AdminEndpoints
                 o.CustomerName,
                 o.TotalAmount,
                 o.Status.ToString(),
+                o.PaymentMethod.ToString().ToLower(),
+                o.PaymentStatus.ToString().ToLower(),
                 o.CreatedAt
             ))
             .ToListAsync(ct);
@@ -290,6 +292,8 @@ public static class AdminEndpoints
                 o.CustomerName,
                 o.TotalAmount,
                 o.Status.ToString(),
+                o.PaymentMethod.ToString().ToLower(),
+                o.PaymentStatus.ToString().ToLower(),
                 o.CreatedAt
             ))
             .ToListAsync(ct);
@@ -307,6 +311,7 @@ public static class AdminEndpoints
             .AsNoTracking()
             .Include(o => o.Items)
             .ThenInclude(oi => oi.Product)
+            .Include(o => o.Payments)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
         if (order is null)
@@ -323,6 +328,11 @@ public static class AdminEndpoints
             new ShippingAddressDto(order.Province, order.Ward, order.Address),
             order.TotalAmount,
             order.Status.ToString(),
+            order.PaymentMethod.ToString().ToLower(),
+            order.PaymentStatus.ToString().ToLower(),
+            order.Payments
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefault(p => p.Id == order.ActivePaymentId)?.CheckoutUrl,
             order.CreatedAt,
             order.Items.Select(oi => new OrderItemDto(
                 oi.ProductId,
@@ -348,6 +358,7 @@ public static class AdminEndpoints
 
         var order = await db.Orders
             .Include(o => o.Items)
+            .Include(o => o.Payments)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
         if (order is null)
         {
@@ -361,6 +372,17 @@ public static class AdminEndpoints
         // Restore stock when order is cancelled
         if (oldStatus != OrderStatus.Cancelled && newStatus == OrderStatus.Cancelled)
         {
+            if (order.PaymentStatus != PaymentStatus.Paid)
+            {
+                order.PaymentStatus = PaymentStatus.Cancelled;
+                var activePayment = order.Payments.FirstOrDefault(p => p.Id == order.ActivePaymentId);
+                if (activePayment is not null && activePayment.Status != PaymentStatus.Paid)
+                {
+                    activePayment.Status = PaymentStatus.Cancelled;
+                    activePayment.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
             var productIds = order.Items.Select(i => i.ProductId).ToList();
             var products = await db.Products
                 .Where(p => productIds.Contains(p.Id))
@@ -382,6 +404,7 @@ public static class AdminEndpoints
         order = await db.Orders
             .Include(o => o.Items)
             .ThenInclude(oi => oi.Product)
+            .Include(o => o.Payments)
             .FirstAsync(o => o.Id == id, ct);
 
         var orderDto = new OrderDto(
@@ -393,6 +416,11 @@ public static class AdminEndpoints
             new ShippingAddressDto(order.Province, order.Ward, order.Address),
             order.TotalAmount,
             order.Status.ToString(),
+            order.PaymentMethod.ToString().ToLower(),
+            order.PaymentStatus.ToString().ToLower(),
+            order.Payments
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefault(p => p.Id == order.ActivePaymentId)?.CheckoutUrl,
             order.CreatedAt,
             order.Items.Select(oi => new OrderItemDto(
                 oi.ProductId,

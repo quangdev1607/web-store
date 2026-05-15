@@ -7,6 +7,7 @@ export { ProductsPage } from './products';
 export { ProductDetailPage } from './product-detail';
 export { CartPage } from './cart';
 export { CheckoutPage } from './checkout';
+export { PaymentResultPage } from './payment-result';
 export { NotFoundPage } from './not-found';
 export { LoginPage } from './login';
 export { RegisterPage } from './register';
