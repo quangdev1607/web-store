@@ -459,7 +459,3 @@ Tự tạo (seed data). Có khoảng 5-6 sản phẩm. Ảnh bánh để trong t
 - Developer (sinh viên) sửa.
 - Biết lỗi qua: log lỗi trên server, người dùng phản hồi.
 - Chưa có hệ thống tự động báo lỗi (Sentry...) vì là bài tập.
-
----
-
-> **Kết luận cho Alan:** Cả dự án chỉ là một tiệm bánh online được xây bằng 2 phần: phần nhìn (React) và phần não (.NET). Khách vào xem bánh → cho vào giỏ → đặt hàng. Admin ngồi sau xem đơn và giao hàng. Mọi thứ khác chỉ là công cụ để làm được 3 việc đó. Đừng sợ mấy cái tên kỳ cục — chúng chỉ là tên gọi của đồ nghề thôi.
