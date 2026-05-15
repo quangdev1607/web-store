@@ -20,7 +20,7 @@ export function HomePage() {
       </div>
 
       {/* Category Shortcuts */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12">
+      {/* <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12">
         {[
           { emoji: '🍭', label: 'Kẹo' },
           { emoji: '🍰', label: 'Bánh' },
@@ -34,7 +34,7 @@ export function HomePage() {
             <p className="font-semibold mt-2">{item.label}</p>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* CTA Button */}
       <div className="flex justify-center">
