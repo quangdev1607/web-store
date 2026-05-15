@@ -1,214 +1,311 @@
-# Tiệm Bánh Bé Yêu
+# Tiệm Bánh Bé Yêu — Tổng Quan Dự Án
 
-Website thương mại điện tử bán bánh kẹo hữu cơ dành cho trẻ em. Dự án gồm hai phần chính: **Frontend** (React SPA) và **Backend** (ASP.NET Core Web API).
-
----
-
-## Công nghệ sử dụng
-
-### Frontend
-
-| Công nghệ             | Mục đích                                                      |
-| --------------------- | ------------------------------------------------------------- |
-| React 19 + TypeScript | UI framework                                                  |
-| Vite 8                | Build tool & dev server                                       |
-| Tailwind CSS 3        | Styling                                                       |
-| Radix UI              | Bộ UI component headless (dialog, select, dropdown, toast...) |
-| Lucide React          | Icon library                                                  |
-| React Router DOM 7    | Client-side routing                                           |
-| Zustand 5             | Global state management (auth)                                |
-| Axios                 | HTTP client                                                   |
-
-### Backend
-
-| Công nghệ                     | Mục đích                                           |
-| ----------------------------- | -------------------------------------------------- |
-| ASP.NET Core 8 (Minimal APIs) | Web API framework                                  |
-| Entity Framework Core 8       | ORM (Object-Relational Mapping)                    |
-| SQLite                        | Cơ sở dữ liệu (file-based, không cần cài đặt thêm) |
-| JWT Bearer Auth               | Xác thực người dùng                                |
-| Swagger / Swashbuckle         | Tài liệu API tự động                               |
-| Cloudinary                    | CDN lưu trữ hình ảnh sản phẩm                      |
+> **Đồ án xây dựng ứng dụng Web thương mại điện tử**  
+> **Môn học:** Lập trình Web / Công nghệ phần mềm (thay thế tên môn học thực tế nếu cần)  
+> **Sinh viên thực hiện:** [Họ tên sinh viên]  
+> **Giảng viên hướng dẫn:** [Họ tên giảng viên]
 
 ---
 
-## Tính năng chính
+## 1. Tổng Quan
 
-### Dành cho khách hàng
+**Tiệm Bánh Bé Yêu** là hệ thống thương mại điện tử chuyên biệt dành cho cửa hàng bánh kẹo hữu cơ an toàn cho trẻ em. Hệ thống được xây dựng theo kiến trúc **Client–Server** với tách biệt rõ ràng giữa tầng giao diện (Frontend) và tầng xử lý nghiệp vụ (Backend), đảm bảo khả năng mở rộng và bảo trì.
 
-- Duyệt sản phẩm: tìm kiếm, lọc theo danh mục, sắp xếp (giá, đánh giá, mới nhất)
-- Xem chi tiết sản phẩm (ảnh, mô tả, giá, tình trạng kho, đánh giá)
-- Giỏ hàng (lưu trên localStorage với khách chưa đăng nhập, lưu server với user đã đăng nhập)
-- Đặt hàng với form thông tin khách hàng và địa chỉ giao hàng (chọn Tỉnh/Thành, Phường/Xã)
-- Đăng ký, đăng nhập, quản lý thông tin cá nhân
-- Xem lịch sử đơn hàng
-- Giao diện responsive (mobile, tablet, desktop)
-
-### Dành cho quản trị viên (Admin)
-
-- Dashboard tổng quan (số đơn hàng, sản phẩm, danh mục, người dùng, doanh thu)
-- Quản lý sản phẩm: thêm, sửa, xóa mềm, bật/tắt trạng thái, cập nhật tồn kho
-- Quản lý danh mục: thêm, sửa, xóa, bật/tắt trạng thái
-- Quản lý đơn hàng: xem tất cả đơn, cập nhật trạng thái (chờ xác nhận → xác nhận → đang giao → đã giao → hủy), tự động hoàn kho khi hủy đơn
-- Quản lý người dùng: xem danh sách, sửa thông tin, đổi mật khẩu, khóa/mở khóa tài khoản
-- Upload ảnh sản phẩm lên Cloudinary
+### Mục tiêu chính
+- Cung cấp nền tảng bán hàng trực tuyến với đầy đủ luồng nghiệp vụ: duyệt sản phẩm → giỏ hàng → đặt hàng → quản lý đơn hàng.
+- Hỗ trợ phân quyền ngưởi dùng: **Khách hàng** (mua sắm) và **Quản trị viên** (quản lý toàn bộ hệ thống).
+- Đảm bảo tính responsive, tương thích đa thiết bị (mobile, tablet, desktop).
 
 ---
 
-## Yêu cầu môi trường
+## 2. Kiến Trúc Hệ Thống
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0 (đi kèm Node.js)
-- **.NET SDK** 8.0 ([tải tại đây](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
-- SQLite được hỗ trợ sẵn trong .NET, không cần cài đặt riêng
-
----
-
-## Cài đặt và chạy
-
-### 1. Backend (ASP.NET Core 8)
-
-```bash
-cd backend
-dotnet restore
-dotnet run
 ```
-
-Backend sẽ chạy tại **http://localhost:5000**. Lần chạy đầu tiên tự động tạo database SQLite (`tiembanh.db`) và seed dữ liệu mẫu (danh mục, sản phẩm, tài khoản admin, danh sách tỉnh/phường Việt Nam).
-
-Swagger UI có sẵn tại **http://localhost:5000/swagger**.
-
-### 2. Frontend (React + Vite)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend sẽ chạy tại **http://localhost:5173**.
-
-### Chạy production
-
-```bash
-# Frontend production build
-cd frontend
-npm run build
-npm run preview
-
-# Backend production
-cd backend
-dotnet run --environment Production
+┌─────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                         │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  React 19 + TypeScript + Vite + Tailwind CSS          │  │
+│  │  • React Router DOM 7 (routing)                        │  │
+│  │  • Zustand 5 (global state: auth)                      │  │
+│  │  • React Context API (cart state)                      │  │
+│  │  • Axios (HTTP client)                                 │  │
+│  │  • Radix UI + Lucide React (UI components & icons)    │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ HTTPS / REST / JSON
+┌─────────────────────────▼───────────────────────────────────┐
+│                        SERVER LAYER                          │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  ASP.NET Core 8 — Minimal APIs                         │  │
+│  │  • JWT Bearer Authentication                           │  │
+│  │  • Role-based Authorization (User / Admin)             │  │
+│  │  • Swagger / OpenAPI (tài liệu API tự động)           │  │
+│  │  • CORS (cho phép giao tiếp cross-origin)             │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Entity Framework Core 8 (ORM)                         │  │
+│  │  • Code-First Migrations                               │  │
+│  │  • SQLite (cơ sở dữ liệu file-based, zero-config)     │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  External Services                                     │  │
+│  │  • Cloudinary CDN (lưu trữ & phân phối hình ảnh)     │  │
+│  │  • Vietnam Provinces API (dữ liệu Tỉnh/Thành, Phường/Xã)│  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Cấu hình
+## 3. Công Nghệ Sử Dụng
 
-### Backend (`backend/appsettings.json`)
-
-| Cấu hình                              | Mô tả                                | Giá trị mặc định                   |
-| ------------------------------------- | ------------------------------------ | ---------------------------------- |
-| `ConnectionStrings:DefaultConnection` | Đường dẫn SQLite DB file             | `Data Source=tiembanh.db`          |
-| `Cors:AllowedOrigins`                 | Origins cho phép CORS                | `localhost:5173`, `localhost:3000` |
-| `JwtSettings:Secret`                  | Khóa bí mật JWT (tối thiểu 32 ký tự) | _(có sẵn, thay đổi khi deploy)_    |
-| `JwtSettings:ExpirationMinutes`       | Thời gian hết hạn token              | `60`                               |
-| `CloudinarySettings:*`                | Thông tin Cloudinary cho upload ảnh  | _(có sẵn)_                         |
-
-### Frontend (`frontend/src/config/constants.ts`)
-
-| Biến môi trường | Mô tả                | Mặc định                    |
-| --------------- | -------------------- | --------------------------- |
-| `VITE_API_URL`  | Backend API base URL | `http://localhost:5000/api` |
-
-Tạo file `.env` trong thư mục `frontend` để ghi đè:
-
-```
-VITE_API_URL=http://localhost:5000/api
-```
+| Tầng | Công nghệ | Phiên bản | Mục đích |
+|------|-----------|-----------|----------|
+| **Frontend** | React | 19.2 | Thư viện UI component-based |
+| | TypeScript | 5.9 | Kiểm tra kiểu tĩnh, tăng độ tin cậy code |
+| | Vite | 8.0 | Công cụ build & dev server hiệu năng cao |
+| | Tailwind CSS | 3.4 | Framework CSS utility-first |
+| | React Router DOM | 7.13 | Điều hướng client-side |
+| | Zustand | 5.0 | Quản lý state toàn cục (auth) |
+| | Axios | 1.15 | Giao tiếp HTTP với Backend |
+| **Backend** | ASP.NET Core | 8.0 | Web API framework |
+| | Entity Framework Core | 8.0 | ORM, trừu tượng hóa truy cập CSDL |
+| | SQLite | 3 | Cơ sở dữ liệu nhẹ, không cần cài đặt server |
+| | JWT Bearer | 8.0 | Xác thực & phân quyền ngưởi dùng |
+| | Swashbuckle | 6.5 | Tạo tài liệu Swagger/OpenAPI |
+| | CloudinaryDotNet | 1.24 | Tích hợp upload & quản lý ảnh |
 
 ---
 
-## Tài khoản mặc định
-
-### Tài khoản Admin
-
-- **Email:** `admin@tiembanh.com`
-- **Mật khẩu:** `admin123`
-
-> **Lưu ý:** Đổi mật khẩu admin ngay sau khi triển khai thực tế.
-
----
-
-## Cấu trúc thư mục
+## 4. Cấu Trúc Dự Án
 
 ```
 build-web-store/
-├── frontend/                        # React frontend
-│   ├── index.html                   # Entry point HTML
-│   ├── vite.config.ts               # Cấu hình Vite (alias @ → src/)
-│   ├── tailwind.config.cjs          # Tailwind theme (màu sắc, font Nunito)
-│   ├── public/                      # Static assets (logo, ảnh background, favicon)
-│   └── src/
-│       ├── main.tsx                 # React entry
-│       ├── App.tsx                  # Root component (router + layout)
-│       ├── api/                     # API client modules (axios instance, auth, products, cart, orders, admin)
-│       ├── components/
-│       │   ├── ui/                  # Generic UI components (Button, Card, Input, Modal, Toast...)
-│       │   ├── layout/              # Header, Footer, MainLayout
-│       │   ├── product/             # ProductCard, ProductFilter, ProductGallery...
-│       │   ├── auth/                # LoginForm, RegisterForm
-│       │   └── cart/                # CartItem, CartSummary, AddressPicker
-│       ├── pages/                   # Route pages (Home, Products, Cart, Checkout, Login, Admin...)
-│       ├── hooks/                   # Custom hooks (useCart)
-│       ├── stores/                  # Zustand stores (authStore)
-│       ├── config/                  # App constants (API URL, sort options...)
-│       ├── types/                   # TypeScript type definitions
-│       └── lib/                     # Utilities (cn, formatPrice...)
+├── backend/                          # ASP.NET Core Web API
+│   ├── Domain/
+│   │   ├── Entities/                 # Các thực thể nghiệp vụ
+│   │   │   ├── Product.cs
+│   │   │   ├── Category.cs
+│   │   │   ├── Order.cs, OrderItem.cs
+│   │   │   ├── User.cs
+│   │   │   ├── Cart.cs, CartItem.cs
+│   │   │   ├── Province.cs, Ward.cs
+│   │   │   └── ProductImage.cs
+│   │   └── Settings/                 # Cấu hình ứng dụng (JWT, Cloudinary)
+│   ├── DTOs/                         # Data Transfer Objects (tách biệt contract API)
+│   │   ├── Products/
+│   │   ├── Orders/
+│   │   ├── Auth/
+│   │   ├── Cart/
+│   │   ├── Categories/
+│   │   ├── Locations/
+│   │   ├── Admin/
+│   │   └── Common/ApiResponse.cs
+│   ├── Extensions/
+│   │   └── Endpoints/                # Minimal API Endpoint Groups
+│   │       ├── ProductEndpoints.cs
+│   │       ├── OrderEndpoints.cs
+│   │       ├── AuthEndpoints.cs
+│   │       ├── CartEndpoints.cs
+│   │       ├── CategoryEndpoints.cs
+│   │       ├── AdminEndpoints.cs
+│   │       ├── ImageEndpoints.cs
+│   │       └── LocationEndpoints.cs
+│   ├── Infrastructure/
+│   │   ├── Persistence/
+│   │   │   ├── AppDbContext.cs       # DbContext EF Core
+│   │   │   ├── Configurations/       # Fluent API entity configurations
+│   │   │   └── DbSeeder.cs           # Seed dữ liệu mẫu
+│   │   └── Services/
+│   │       ├── JwtService.cs
+│   │       ├── PasswordHasher.cs
+│   │       └── CloudinaryService.cs
+│   ├── Migrations/                   # EF Core Migrations
+│   ├── Data/
+│   │   └── provinces.json, wards.json
+│   ├── appsettings.json
+│   ├── Program.cs
+│   └── TiemBanhBeYeu.Api.csproj
 │
-└── backend/                         # ASP.NET Core Web API
-    ├── Program.cs                   # Entry point (DI, middleware, endpoints, CORS, JWT, Swagger)
-    ├── appsettings.json             # Cấu hình chính
-    ├── Domain/
-    │   ├── Entities/                # EF Core entity classes (Product, Category, Order, User, Cart...)
-    │   └── Settings/                # CloudinarySettings
-    ├── Infrastructure/
-    │   ├── Persistence/             # AppDbContext, entity configurations, DbSeeder
-    │   └── Services/                # JwtService, PasswordHasher, CloudinaryService
-    ├── DTOs/                        # Data Transfer Objects (request/response models)
-    ├── Extensions/Endpoints/        # Minimal API endpoint definitions (CRUD cho từng entity)
-    ├── Data/                        # Seed data JSON files (provinces.json, wards.json)
-    └── Migrations/                  # EF Core database migrations
+├── frontend/                         # React SPA
+│   ├── src/
+│   │   ├── pages/                    # Các trang theo route
+│   │   │   ├── home.tsx
+│   │   │   ├── products.tsx
+│   │   │   ├── product-detail.tsx
+│   │   │   ├── cart.tsx
+│   │   │   ├── checkout.tsx
+│   │   │   ├── login.tsx, register.tsx
+│   │   │   ├── profile.tsx, orders.tsx
+│   │   │   └── admin/index.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                   # Primitive UI components (Button, Input, Modal...)
+│   │   │   ├── layout/               # Header, Footer, Layout wrapper
+│   │   │   ├── product/              # ProductCard, ProductGrid, ProductFilter...
+│   │   │   ├── cart/                 # CartItem, CartSummary, AddressPicker
+│   │   │   └── auth/                 # LoginForm, RegisterForm
+│   │   ├── api/                      # API client modules (axios instances + endpoint calls)
+│   │   ├── hooks/                    # Custom React hooks (use-cart)
+│   │   ├── stores/                   # Zustand stores (auth-store)
+│   │   ├── types/                    # TypeScript interfaces
+│   │   ├── lib/                      # Utilities (formatPrice, cn, ...)
+│   │   └── mocks/                    # Mock data (development)
+│   ├── public/                       # Static assets & product images
+│   ├── index.html
+│   ├── vite.config.ts
+│   ├── tailwind.config.cjs
+│   └── package.json
+│
+├── build-web-store.sln               # Visual Studio Solution
+└── README.md                         # File này
 ```
 
 ---
 
-## Các lệnh hữu ích
+## 5. Các Module Nghiệp Vụ Chính
 
-| Lệnh                             | Mô tả                                |
-| -------------------------------- | ------------------------------------ |
-| `cd frontend && npm run dev`     | Chạy frontend dev server             |
-| `cd frontend && npm run build`   | Build production (type-check + Vite) |
-| `cd frontend && npm run preview` | Preview production build             |
-| `cd frontend && npm run lint`    | Kiểm tra code ESLint                 |
-| `cd backend && dotnet run`       | Chạy backend                         |
-| `cd backend && dotnet build`     | Build backend                        |
-| `cd backend && dotnet watch run` | Chạy backend với hot-reload          |
+### 5.1. Module Sản Phẩm (Products)
+- **Khách hàng:** Duyệt danh sách, tìm kiếm theo tên, lọc theo danh mục, sắp xếp theo giá/đánh giá/mới nhất, xem chi tiết sản phẩm (ảnh, mô tả, tồn kho).
+- **Admin:** CRUD sản phẩm, cập nhật tồn kho, bật/tắt trạng thái, xóa mềm (soft delete), upload ảnh lên Cloudinary.
+
+### 5.2. Module Giỏ Hàng & Đặt Hàng (Cart & Orders)
+- **Giỏ hàng:** Lưu trữ localStorage cho khách vãng lai; đồng bộ server khi đăng nhập.
+- **Đặt hàng:** Form thu thập thông tin khách hàng (họ tên, SĐT, email), chọn địa chỉ giao hàng qua dropdown Tỉnh/Thành → Phường/Xã (dữ liệu từ file JSON địa phương), tính tổng tiền.
+- **Quản lý đơn hàng (Admin):** Xem toàn bộ đơn hàng, cập nhật trạng thài theo luồng:  
+  `Chờ xác nhận → Xác nhận → Đang giao → Đã giao / Hủy`. Tự động hoàn kho khi hủy đơn.
+
+### 5.3. Module Xác Thực & Phân Quyền (Authentication)
+- Đăng ký, đăng nhập bằng email/mật khẩu (bcrypt hashing).
+- JWT Access Token với thờ hạn 60 phút, gửi kèm header `Authorization: Bearer <token>`.
+- Phân quyền Role-based: `User` (mua hàng) và `Admin` (quản trị).
+- Khách hàng có thể đặt hàng không cần đăng nhập (guest checkout).
+
+### 5.4. Module Quản Trị (Admin Dashboard)
+- Dashboard tổng quan: thống kê số đơn hàng, sản phẩm, danh mục, ngưởi dùng, doanh thu.
+- Quản lý ngưởi dùng: xem danh sách, sửa thông tin, đổi mật khẩu, khóa/mở khóa tài khoản.
+
+### 5.5. Module Địa Chỉ (Locations)
+- Cung cấp API trả về danh sách Tỉnh/Thành và Phường/Xã từ Việt Nam (dữ liệu static JSON + seed vào SQLite).
+- Hỗ trợ autocomplete địa chỉ trong form checkout.
 
 ---
 
-## API Endpoints chính
+## 6. Cơ Sở Dữ Liệu (SQLite)
 
-| Nhóm         | Endpoint                                                                   | Auth                                     |
-| ------------ | -------------------------------------------------------------------------- | ---------------------------------------- |
-| **Sản phẩm** | `GET/POST /api/products` `GET/PUT/DELETE /api/products/{id}`               | Public (GET) / Admin (POST, PUT, DELETE) |
-| **Danh mục** | `GET/POST /api/categories`                                                 | Public (GET) / Admin (CRUD)              |
-| **Xác thực** | `POST /api/auth/register` `POST /api/auth/login` `GET/PUT /api/auth/me`    | Public (register/login) / JWT (profile)  |
-| **Giỏ hàng** | `GET/POST/PUT/DELETE /api/cart`                                            | JWT required                             |
-| **Đơn hàng** | `POST /api/orders` `GET /api/orders` `GET /api/orders/{id}`                | Public (create) / JWT (history)          |
-| **Địa giới** | `GET /api/locations/provinces` `GET /api/locations/provinces/{code}/wards` | Public                                   |
-| **Hình ảnh** | `POST /api/images/upload` `DELETE /api/images/{publicId}`                  | Admin                                    |
-| **Admin**    | `GET /api/admin/dashboard` + CRUD orders/products/categories/users         | Admin role                               |
-| **Health**   | `GET /api/health`                                                          | Public                                   |
+| Bảng | Mô tả |
+|------|-------|
+| **Products** | Thông tin sản phẩm (tên, mô tả, giá, tồn kho, trạng thái, đánh giá, xóa mềm) |
+| **Categories** | Danh mục sản phẩm (tên, mô tả, trạng thái) |
+| **ProductImages** | Ảnh sản phẩm (URL, public ID Cloudinary) |
+| **Users** | Tài khoản ngưởi dùng (email, password hash, họ tên, địa chỉ, roles) |
+| **Orders** | Đơn hàng (mã đơn, thông tin khách, địa chỉ, tổng tiền, trạng thái) |
+| **OrderItems** | Chi tiết đơn hàng (sản phẩm, số lượng, đơn giá) |
+| **Carts** | Giỏ hàng của ngưởi dùng đã đăng nhập |
+| **CartItems** | Chi tiết giỏ hàng (sản phẩm, số lượng) |
+| **Provinces** | Danh sách Tỉnh/Thành |
+| **Wards** | Danh sách Phường/Xã (liên kết Province) |
 
-Tài liệu API đầy đủ có sẵn tại Swagger UI: **http://localhost:5000/swagger**
+> **Lưu ý:** Mối quan hệ chính: `Product` ↔ `Category` (N-1), `Order` ↔ `OrderItem` (1-N), `OrderItem` ↔ `Product` (N-1), `User` ↔ `Order` (1-N), `User` ↔ `Cart` (1-1), `Province` ↔ `Ward` (1-N).
+
+---
+
+## 7. Hướng Dẫn Cài Đặt & Chạy Dự Án
+
+### 7.1. Yêu cầu môi trường
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0
+- **.NET SDK** 8.0 ([tải tại đây](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+
+### 7.2. Backend
+
+```bash
+cd backend
+
+# Khôi phục package NuGet
+dotnet restore
+
+# Áp dụng migration & tạo CSDL (nếu chưa có)
+dotnet ef database update
+
+# Chạy server (mặc định port 5000)
+dotnet run
+```
+
+- API sẽ chạy tại: `http://localhost:5000`
+- Swagger UI: `http://localhost:5000/swagger`
+
+### 7.3. Frontend
+
+```bash
+cd frontend
+
+# Cài đặt dependencies
+npm install
+
+# Chạy dev server (mặc định port 5173)
+npm run dev
+```
+
+- Website sẽ chạy tại: `http://localhost:5173`
+
+### 7.4. Tài khoản mặc định (sau khi seed)
+
+| Vai trò | Email | Mật khẩu |
+|---------|-------|----------|
+| Admin | `admin@tiembanh.com` | `Admin@123` |
+| User | `user@tiembanh.com` | `User@123` |
+
+> *Lưu ý: Nếu chưa có seed data, cần tạo tài khoản qua endpoint `/api/auth/register`.*
+
+---
+
+## 8. Tài Liệu API
+
+Khi backend đang chạy, tài liệu API đầy đủ có thể truy cập qua **Swagger UI**:
+
+```
+http://localhost:5000/swagger
+```
+
+Các nhóm endpoint chính:
+- `GET/POST /api/products` — Sản phẩm
+- `GET/POST /api/orders` — Đơn hàng
+- `POST /api/auth/register|login` — Xác thực
+- `GET/PUT /api/auth/me` — Thông tin cá nhân
+- `GET/POST /api/cart` — Giỏ hàng
+- `GET/POST /api/categories` — Danh mục
+- `GET /api/locations/*` — Địa chỉ Việt Nam
+- `GET/POST /api/admin/*` — Quản trị (yêu cầu role Admin)
+
+---
+
+## 9. Ghi Chú Kỹ Thuật cho Giảng Viên
+
+### 9.1. Lý do chọn công nghệ
+- **React 19 + Vite:** Tận dụng hiệu năng build nhanh và các cải tiến mới nhất của React (Server Components readiness, Actions, v.v.).
+- **Minimal APIs (.NET 8):** Giảm boilerplate so với MVC truyền thống, tập trung vào Endpoint Groups giúp code gọn gàng, dễ đọc cho dự án vừa và nhỏ.
+- **SQLite:** Phù hợp cho môi trường demo và phát triển; không yêu cầu cài đặt server CSDL riêng, dễ chia sẻ file `tiembanh.db` giữa các thành viên.
+- **Cloudinary:** Giảm tải lưu trữ static asset cho server, tận dụng CDN toàn cầu để tối ưu tốc độ tải ảnh.
+
+### 9.2. Điểm nổi bật về thiết kế
+- **Soft Delete:** Sản phẩm sử dụng cờ `IsDeleted` + `DeletedAt` thay vì xóa vật lý, đảm bảo toàn vẹn dữ liệu đơn hàng lịch sử.
+- **Guest Cart:** Giỏ hàng hỗ trợ cả khách vãng lai (localStorage) và user đã đăng nhập (server-side), tạo trải nghiệm mượt mà không bắt buộc đăng nhập ngay từ đầu.
+- **Auto Stock Recovery:** Khi admin hủy đơn hàng, hệ thống tự động hoàn trả số lượng tồn kho về `Product.StockQuantity`.
+
+### 9.3. Hạn chế & Hướng phát triển
+- **Thanh toán:** Hiện tại chỉ ghi nhận đơn hàng, chưa tích hợp cổng thanh toán thực (Momo, VNPay, Stripe).
+- **Caching:** Chưa áp dụng Redis hoặc Output Caching cho API; có thể bổ sung khi lượng truy cập tăng.
+- **Real-time:** Chưa có WebSocket/Socket.IO để cập nhật trạng thái đơn hàng real-time.
+- **Pagination:** Frontend products page đã có pagination; có thể mở rộng infinite scroll.
+- **Testing:** Hiện có cấu trúc sẵn cho Vitest + Testing Library, cần bổ sung thêm test cases unit/integration.
+
+---
+
+## 10. Liên Hệ & Hỗ Trợ
+
+- **Source code:** [GitHub Repository](https://github.com/[username]/build-web-store) *(thay bằng link thực tế)*
+- **Báo cáo lỗi:** Vui lòng tạo Issue trên GitHub hoặc liên hệ trực tiếp sinh viên thực hiện.
+
+---
+
+*Được xây dựng với ❤️ bằng React & ASP.NET Core.*
