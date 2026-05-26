@@ -920,25 +920,6 @@ Ràng buộc đáng nhớ:
 - Category delete là soft delete: `DeletedAt = now`, `IsActive = false`.
 - User delete trong admin là deactivate: `IsActive = false`.
 
-## 11. Những điểm lệch giữa docs cũ và code hiện tại
-
-Đọc phần này kỹ trước khi sửa bug, vì đây là nơi dễ mất thời gian nhất.
-
-1. README cũ ghi Swagger ở `/swagger`, nhưng code đặt Swagger UI ở root `http://localhost:5000/`.
-2. README cũ ghi admin password `Admin@123`, nhưng seeder hiện là `admin123`.
-3. README/QNA có nói user mặc định, nhưng `DbSeeder` chỉ tạo admin nếu bảng users trống.
-4. QNA nói bcrypt, nhưng code dùng PBKDF2 SHA256 custom.
-5. Tài liệu cũ nói guest checkout, nhưng frontend checkout hiện yêu cầu đăng nhập.
-6. Tài liệu cũ nói đồng bộ cart local lên server khi login, nhưng UI hiện chưa làm sync này.
-7. `GET /api/orders` được comment là "current user's orders", nhưng backend chưa auth và chưa lọc theo user.
-8. `Order.UserId` có trong entity nhưng chưa được set khi tạo order.
-9. `/order/:id` trong frontend đang map tới `ProductDetailPage`, không phải order detail page.
-10. Frontend admin category create/update chưa gửi `slug`, trong khi backend yêu cầu `slug`.
-11. Endpoint image upload/delete đang anonymous, dù về nghiệp vụ chỉ admin nên dùng.
-12. Dev endpoints đang anonymous và có endpoint xóa dữ liệu.
-13. `product-seed.json` ở root có nhiều `images: []`; nếu seed từ file này, sản phẩm có thể thiếu ảnh.
-14. `.gitignore` hiện rất ít rule, chưa ignore rõ `node_modules`, `bin`, `obj`, `dist`, `*.db`. Cần cẩn thận khi add file.
-
 ## 12. Known gaps nên ưu tiên nếu tiếp tục phát triển
 
 ### Bảo mật/nghiệp vụ
