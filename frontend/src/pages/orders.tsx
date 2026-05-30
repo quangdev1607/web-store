@@ -2,7 +2,7 @@
  * Orders Page
  * Displays user's order history with API integration
  */
-import { getMyOrders, getOrderById } from "@/api/orders";
+import { cancelOrder, getMyOrders, getOrderById } from "@/api/orders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/modal";
@@ -37,6 +37,7 @@ export function OrdersPage() {
     const [error, setError] = useState<string>("");
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
+    const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null);
     const [filters, setFilters] = useState<OrderFilters>({
         page: 1,
         pageSize: 10,
@@ -93,6 +94,34 @@ export function OrdersPage() {
             fetchOrderDetails(order.id);
         },
         [fetchOrderDetails],
+    );
+
+    const handleCancelOrder = useCallback(
+        async (order: Order) => {
+            if (order.status.toLowerCase() !== "pending") {
+                setError("Chỉ có thể hủy đơn hàng đang chờ xác nhận");
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Bạn có chắc chắn muốn hủy đơn hàng này? Sản phẩm sẽ được hoàn lại vào kho.",
+            );
+            if (!confirmed) return;
+
+            try {
+                setError("");
+                setCancellingOrderId(order.id);
+                const cancelledOrder = await cancelOrder(order.id);
+                setSelectedOrder((current) => (current?.id === order.id ? cancelledOrder : current));
+                await fetchOrders();
+            } catch (err) {
+                console.error("Failed to cancel order:", err);
+                setError(getCancelOrderError(err));
+            } finally {
+                setCancellingOrderId(null);
+            }
+        },
+        [fetchOrders],
     );
 
     // Handle filter change
@@ -175,7 +204,13 @@ export function OrdersPage() {
             ) : (
                 <div className="space-y-4">
                     {orders.map((order) => (
-                        <OrderCard key={order.id} order={order} onViewDetails={handleViewDetails} />
+                        <OrderCard
+                            key={order.id}
+                            order={order}
+                            onViewDetails={handleViewDetails}
+                            onCancelOrder={handleCancelOrder}
+                            isCancelling={cancellingOrderId === order.id}
+                        />
                     ))}
                 </div>
             )}
@@ -217,7 +252,11 @@ export function OrdersPage() {
                                 <Skeleton className="h-32 w-full" />
                             </div>
                         ) : (
-                            <OrderDetailContent order={selectedOrder} />
+                            <OrderDetailContent
+                                order={selectedOrder}
+                                onCancelOrder={handleCancelOrder}
+                                isCancelling={cancellingOrderId === selectedOrder.id}
+                            />
                         )}
                     </DialogContent>
                 )}
@@ -229,7 +268,19 @@ export function OrdersPage() {
 /**
  * Order card component
  */
-function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (order: Order) => void }) {
+function OrderCard({
+    order,
+    onViewDetails,
+    onCancelOrder,
+    isCancelling,
+}: {
+    order: Order;
+    onViewDetails: (order: Order) => void;
+    onCancelOrder: (order: Order) => Promise<void>;
+    isCancelling: boolean;
+}) {
+    const canCancel = order.status.toLowerCase() === "pending";
+
     return (
         <div className="border rounded-lg p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -240,11 +291,22 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
                     </div>
                     <p className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
                     <Button variant="outline" size="sm" onClick={() => onViewDetails(order)}>
                         Xem chi tiết
                     </Button>
+                    {canCancel && (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onCancelOrder(order)}
+                            disabled={isCancelling}
+                        >
+                            {isCancelling ? "Đang hủy..." : "Hủy đơn"}
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>
@@ -254,13 +316,22 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
 /**
  * Order detail modal content
  */
-function OrderDetailContent({ order }: { order: Order }) {
+function OrderDetailContent({
+    order,
+    onCancelOrder,
+    isCancelling,
+}: {
+    order: Order;
+    onCancelOrder: (order: Order) => Promise<void>;
+    isCancelling: boolean;
+}) {
     const shippingAddress = order.shippingAddress;
     const fullAddress = shippingAddress
         ? [shippingAddress.address, shippingAddress.ward, shippingAddress.province]
               .filter(Boolean)
               .join(", ")
         : "Chưa cập nhật";
+    const canCancel = order.status.toLowerCase() === "pending";
 
     return (
         <div className="space-y-6">
@@ -300,6 +371,17 @@ function OrderDetailContent({ order }: { order: Order }) {
                     <span className="text-muted-foreground">Tổng tiền:</span>
                     <span className="font-semibold text-primary">{formatPrice(order.totalAmount)}</span>
                 </div>
+                {canCancel && (
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onCancelOrder(order)}
+                        disabled={isCancelling}
+                    >
+                        {isCancelling ? "Đang hủy..." : "Hủy đơn hàng"}
+                    </Button>
+                )}
             </div>
 
             {/* Customer Info */}
@@ -324,7 +406,7 @@ function OrderDetailContent({ order }: { order: Order }) {
  * Get badge variant from order status
  */
 function getBadgeVariant(status: OrderStatus): "default" | "success" | "warning" | "destructive" | "secondary" {
-    switch (status) {
+    switch (status.toLowerCase()) {
         case "delivered":
             return "success";
         case "pending":
@@ -337,4 +419,24 @@ function getBadgeVariant(status: OrderStatus): "default" | "success" | "warning"
         default:
             return "default";
     }
+}
+
+function getCancelOrderError(error: unknown): string {
+    const response = (
+        error as { response?: { status?: number; data?: { message?: string; error?: { message?: string } } } }
+    ).response;
+
+    if (response?.data?.error?.message || response?.data?.message) {
+        return response.data.error?.message || response.data.message || "Không thể hủy đơn hàng. Vui lòng thử lại.";
+    }
+
+    if (response?.status === 401) {
+        return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+    }
+
+    if (response?.status === 404) {
+        return "Chức năng hủy đơn chưa sẵn sàng. Vui lòng khởi động lại backend và thử lại.";
+    }
+
+    return "Không thể hủy đơn hàng. Vui lòng thử lại.";
 }

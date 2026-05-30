@@ -35,6 +35,15 @@ export async function getOrderById(id: number): Promise<Order> {
 }
 
 /**
+ * Cancel current user's pending order
+ * PATCH /api/orders/{id}/cancel
+ */
+export async function cancelOrder(id: number): Promise<Order> {
+  const response = await axios.patch<ApiResponse<Order>>(`/orders/${id}/cancel`);
+  return response.data.data;
+}
+
+/**
  * Get current user's orders
  * GET /api/orders (for authenticated user)
  */

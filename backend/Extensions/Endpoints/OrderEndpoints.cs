@@ -38,6 +38,15 @@ public static class OrderEndpoints
             .ProducesProblem(401)
             .ProducesProblem(404)
             .RequireAuthorization();
+
+        // PATCH /api/orders/{id}/cancel - Cancel current user's pending order
+        orders.MapPatch("/{id:int}/cancel", CancelOrder)
+            .WithName("CancelOrder")
+            .Produces<ApiResponse<OrderDto>>()
+            .ProducesProblem(400)
+            .ProducesProblem(401)
+            .ProducesProblem(404)
+            .RequireAuthorization();
     }
 
     private static async Task<IResult> CreateOrder(
@@ -194,32 +203,70 @@ public static class OrderEndpoints
             ));
         }
 
-        var dto = new OrderDto(
-            order.Id,
-            order.OrderCode,
-            order.CustomerName,
-            order.CustomerPhone,
-            order.CustomerEmail,
-            new ShippingAddressDto(
-                order.Province,
-                order.Ward,
-                order.Address
-            ),
-            order.TotalAmount,
-            order.Status.ToString().ToLower(),
-            order.CreatedAt,
-            order.Items.Select(i => new OrderItemDto(
-                i.ProductId,
-                i.ProductName,
-                i.ProductPrice,
-                i.Quantity
-            )).ToList()
-        );
+        var dto = ToOrderDto(order);
 
         return Results.Ok(new ApiResponse<OrderDto>(
             Success: true,
             Data: dto,
             Message: "Lấy thông tin đơn hàng thành công"
+        ));
+    }
+
+    private static async Task<IResult> CancelOrder(
+        int id,
+        HttpContext httpContext,
+        AppDbContext db = null!,
+        CancellationToken ct = default)
+    {
+        var userId = GetUserId(httpContext);
+        if (userId is null) return Results.Unauthorized();
+
+        var order = await db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id && o.UserId == userId.Value, ct);
+
+        if (order is null)
+        {
+            return Results.NotFound(new ApiResponse<OrderDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("ORDER_NOT_FOUND", "Đơn hàng không tồn tại")
+            ));
+        }
+
+        if (order.Status != OrderStatus.Pending)
+        {
+            return Results.BadRequest(new ApiResponse<OrderDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("ORDER_CANNOT_BE_CANCELLED", "Chỉ có thể hủy đơn hàng đang chờ xác nhận")
+            ));
+        }
+
+        var productIds = order.Items.Select(i => i.ProductId).ToList();
+        var products = await db.Products
+            .Where(p => productIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, ct);
+        var now = DateTime.UtcNow;
+
+        foreach (var item in order.Items)
+        {
+            if (products.TryGetValue(item.ProductId, out var product))
+            {
+                product.StockQuantity += item.Quantity;
+                product.UpdatedAt = now;
+            }
+        }
+
+        order.Status = OrderStatus.Cancelled;
+        order.UpdatedAt = now;
+
+        await db.SaveChangesAsync(ct);
+
+        return Results.Ok(new ApiResponse<OrderDto>(
+            Success: true,
+            Data: ToOrderDto(order),
+            Message: "Hủy đơn hàng thành công"
         ));
     }
 
@@ -292,6 +339,28 @@ public static class OrderEndpoints
         var random = Random.Shared.Next(1000, 9999);
         return $"ORD-{timestamp}-{random}";
     }
+
+    private static OrderDto ToOrderDto(Order order) => new(
+        order.Id,
+        order.OrderCode,
+        order.CustomerName,
+        order.CustomerPhone,
+        order.CustomerEmail,
+        new ShippingAddressDto(
+            order.Province,
+            order.Ward,
+            order.Address
+        ),
+        order.TotalAmount,
+        order.Status.ToString().ToLower(),
+        order.CreatedAt,
+        order.Items.Select(i => new OrderItemDto(
+            i.ProductId,
+            i.ProductName,
+            i.ProductPrice,
+            i.Quantity
+        )).ToList()
+    );
 
     private static int? GetUserId(HttpContext httpContext)
     {
