@@ -3,11 +3,15 @@
  * Application footer with company info and links
  */
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/stores/auth-store';
 
 /**
  * Footer component
  */
 export function Footer() {
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.roles.includes('Admin') ?? false;
+
   return (
     <footer className="border-t bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -44,14 +48,16 @@ export function Footer() {
                   Giỏ hàng
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/orders"
-                  className="text-sm text-muted-foreground hover:text-primary"
-                >
-                  Đơn hàng của tôi
-                </Link>
-              </li>
+              {!isAdmin && (
+                <li>
+                  <Link
+                    to="/orders"
+                    className="text-sm text-muted-foreground hover:text-primary"
+                  >
+                    Đơn hàng của tôi
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 

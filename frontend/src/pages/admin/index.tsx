@@ -9,6 +9,7 @@ import {
     deleteCategory,
     deleteProduct,
     getAdminCategories,
+    getAdminOrderById,
     getAdminOrders,
     getAdminProducts,
     getAdminUsers,
@@ -46,7 +47,7 @@ import type {
     UserFilters,
 } from "@/types";
 import { getOrderStatusLabel } from "@/types/order";
-import { KeyRound, PencilIcon, PlusIcon, RotateCcwIcon, ShieldBan, ShieldCheck, TrashIcon } from "lucide-react";
+import { EyeIcon, KeyRound, PencilIcon, PlusIcon, RotateCcwIcon, ShieldBan, ShieldCheck, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
@@ -327,6 +328,9 @@ function OrdersContent({
         orderId: number;
         status: OrderStatus;
     } | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
     // Track locally confirmed orders - helpful while waiting for fetch to complete
     const [confirmedOrderIds, setConfirmedOrderIds] = useState<Set<number>>(new Set());
 
@@ -358,6 +362,28 @@ function OrdersContent({
 
     const handleCancelStatusChange = () => {
         setPendingStatusChange(null);
+    };
+
+    const handleViewDetails = async (orderId: number) => {
+        setSelectedOrder(null);
+        setDetailError(null);
+        setIsDetailLoading(true);
+
+        try {
+            const orderDetails = await getAdminOrderById(orderId);
+            setSelectedOrder(orderDetails);
+        } catch (error) {
+            console.error("Failed to fetch order details:", error);
+            setDetailError("Không thể tải chi tiết đơn hàng");
+        } finally {
+            setIsDetailLoading(false);
+        }
+    };
+
+    const closeDetailModal = () => {
+        setSelectedOrder(null);
+        setDetailError(null);
+        setIsDetailLoading(false);
     };
 
     const handleFilterChange = (key: keyof OrderFilters, value: string) => {
@@ -440,6 +466,10 @@ function OrdersContent({
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
+                                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(order.id)}>
+                                            <EyeIcon className="w-4 h-4 mr-2" />
+                                            Chi tiết
+                                        </Button>
                                         <select
                                             className="border rounded-md px-2 py-1 text-sm"
                                             value={order.status.toLowerCase()}
@@ -511,6 +541,85 @@ function OrdersContent({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Order Detail Modal */}
+            <Dialog open={isDetailLoading || !!selectedOrder || !!detailError} onOpenChange={closeDetailModal}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Chi tiết đơn hàng</DialogTitle>
+                    </DialogHeader>
+                    {isDetailLoading ? (
+                        <div className="py-8 space-y-3">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                        </div>
+                    ) : detailError ? (
+                        <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{detailError}</div>
+                    ) : selectedOrder ? (
+                        <AdminOrderDetailContent order={selectedOrder} />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+function AdminOrderDetailContent({ order }: { order: Order }) {
+    const shippingAddress = order.shippingAddress;
+    const fullAddress = shippingAddress
+        ? [shippingAddress.address, shippingAddress.ward, shippingAddress.province].filter(Boolean).join(", ")
+        : "Chưa cập nhật";
+
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Sản phẩm</h3>
+                {order.items && order.items.length > 0 ? (
+                    <div className="border rounded-lg divide-y">
+                        {order.items.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 gap-4">
+                                <div className="flex-1">
+                                    <p className="font-medium">{item.productName || "Sản phẩm"}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {formatPrice(item.productPrice)} x {item.quantity}
+                                    </p>
+                                </div>
+                                <p className="font-medium text-right">{formatPrice(item.productPrice * item.quantity)}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground text-sm">Không có sản phẩm</p>
+                )}
+            </div>
+
+            <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Thông tin đơn hàng</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Mã đơn hàng:</span>
+                    <span className="font-medium">{order.orderCode || "-"}</span>
+                    <span className="text-muted-foreground">Ngày đặt:</span>
+                    <span>{formatDate(order.createdAt)}</span>
+                    <span className="text-muted-foreground">Tình trạng:</span>
+                    <Badge variant={getBadgeVariant(order.status)}>{getOrderStatusLabel(order.status)}</Badge>
+                    <span className="text-muted-foreground">Tổng tiền:</span>
+                    <span className="font-semibold text-primary">{formatPrice(order.totalAmount)}</span>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Thông tin người mua</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Họ tên:</span>
+                    <span>{order.customerName || "-"}</span>
+                    <span className="text-muted-foreground">Số điện thoại:</span>
+                    <span>{order.customerPhone || "-"}</span>
+                    <span className="text-muted-foreground">Email:</span>
+                    <span>{order.customerEmail || "-"}</span>
+                    <span className="text-muted-foreground">Địa chỉ:</span>
+                    <span>{fullAddress}</span>
+                </div>
+            </div>
         </div>
     );
 }

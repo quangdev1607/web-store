@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Layout } from '@/components/layout';
 import { CartProvider } from '@/hooks/use-cart';
 import { useAuthStore } from '@/stores/auth-store';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 // Page components
 import {
@@ -30,6 +30,7 @@ function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const checkAuth = useAuthStore((state) => state.checkAuth);
+  const isAdmin = isAuthenticated && (user?.roles.includes('Admin') ?? false);
 
   // Check auth on app load
   useEffect(() => {
@@ -54,7 +55,7 @@ function App() {
 
             {/* User routes (requires login) */}
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders" element={isAdmin ? <Navigate to="/admin" replace /> : <OrdersPage />} />
             <Route path="/order/:id" element={<ProductDetailPage />} />
 
             {/* Admin routes (requires admin role) */}

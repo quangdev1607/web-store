@@ -18,6 +18,7 @@ export function Header() {
   const { totalItems } = useCart();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isAdmin = user?.roles.includes('Admin') ?? false;
 
   const handleLogout = () => {
     logout();
@@ -44,12 +45,14 @@ export function Header() {
           </Link>
           {isAuthenticated && (
             <>
-              <Link
-                to="/orders"
-                className="text-sm font-semibold hover:text-primary transition-colors"
-              >
-                Đơn hàng
-              </Link>
+              {!isAdmin && (
+                <Link
+                  to="/orders"
+                  className="text-sm font-semibold hover:text-primary transition-colors"
+                >
+                  Đơn hàng
+                </Link>
+              )}
               {user?.roles.includes('Admin') && (
                 <Link
                   to="/admin"
@@ -96,13 +99,15 @@ export function Header() {
                   >
                     Thông tin tài khoản
                   </Link>
-                  <Link
-                    to="/orders"
-                    className="block px-4 py-2 text-sm hover:bg-accent"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Đơn hàng của tôi
-                  </Link>
+                  {!isAdmin && (
+                    <Link
+                      to="/orders"
+                      className="block px-4 py-2 text-sm hover:bg-accent"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Đơn hàng của tôi
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm hover:bg-accent text-destructive"
@@ -152,13 +157,15 @@ export function Header() {
             </Link>
             {isAuthenticated && (
               <>
-                <Link
-                  to="/orders"
-                  className="block py-2 text-sm font-semibold"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Đơn hàng
-                </Link>
+                {!isAdmin && (
+                  <Link
+                    to="/orders"
+                    className="block py-2 text-sm font-semibold"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Đơn hàng
+                  </Link>
+                )}
                 {user?.roles.includes('Admin') && (
                   <Link
                     to="/admin"
