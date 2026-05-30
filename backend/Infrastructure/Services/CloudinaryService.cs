@@ -30,9 +30,8 @@ public sealed class CloudinaryService : ICloudinaryService
         {
             File = new FileDescription(fileName, fileStream),
             Folder = $"tiembanhbeyeu/{folder}",
-            Transformation = new Transformation()
-                .Quality("auto")
-                .FetchFormat("auto")
+            UniqueFilename = true,
+            Overwrite = false
         };
 
         return await _cloudinary.UploadAsync(uploadParams);

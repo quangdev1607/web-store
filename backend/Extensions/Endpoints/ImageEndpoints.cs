@@ -14,6 +14,7 @@ public static class ImageEndpoints
             .WithName("UploadImage")
             .Produces(200)
             .ProducesProblem(400)
+            .ProducesProblem(502)
             .ProducesProblem(401)
             .AllowAnonymous();
 
@@ -28,46 +29,87 @@ public static class ImageEndpoints
     private static async Task<IResult> UploadImage(
         HttpContext context,
         ICloudinaryService cloudinaryService,
+        ILoggerFactory loggerFactory,
         CancellationToken ct)
     {
-        var form = await context.Request.ReadFormAsync(ct);
-        var file = form.Files.FirstOrDefault();
+        var logger = loggerFactory.CreateLogger(nameof(ImageEndpoints));
 
-        if (file == null || file.Length == 0)
+        try
         {
-            return Results.BadRequest(new { error = "No file provided" });
+            if (!context.Request.HasFormContentType)
+            {
+                return Results.BadRequest(new
+                {
+                    error = $"Invalid upload content type: {context.Request.ContentType ?? "none"}"
+                });
+            }
+
+            var form = await context.Request.ReadFormAsync(ct);
+            var file = form.Files.FirstOrDefault();
+
+            if (file == null || file.Length == 0)
+            {
+                return Results.BadRequest(new { error = "No file provided" });
+            }
+
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            if (!allowedTypes.Contains(file.ContentType.ToLowerInvariant()))
+            {
+                return Results.BadRequest(new { error = "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." });
+            }
+
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                return Results.BadRequest(new { error = "File size exceeds 10MB limit" });
+            }
+
+            var folder = context.Request.Query["folder"].ToString();
+            var targetFolder = string.IsNullOrEmpty(folder) ? "products" : folder;
+
+            using var stream = file.OpenReadStream();
+            var result = await cloudinaryService.UploadImageAsync(stream, file.FileName, targetFolder);
+
+            if (result.Error != null)
+            {
+                return Results.BadRequest(new { error = result.Error.Message });
+            }
+
+            var imageUrl = result.SecureUrl?.ToString() ?? result.Url?.ToString();
+
+            if (string.IsNullOrWhiteSpace(imageUrl))
+            {
+                logger.LogError("Cloudinary upload succeeded without an image URL for file {FileName}", file.FileName);
+                return Results.Json(
+                    new { error = "Cloudinary did not return an image URL." },
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
+
+            return Results.Ok(new
+            {
+                publicId = result.PublicId,
+                url = imageUrl,
+                format = result.Format,
+                width = result.Width,
+                height = result.Height
+            });
         }
-
-        var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
-        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        catch (BadHttpRequestException ex)
         {
-            return Results.BadRequest(new { error = "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." });
+            logger.LogWarning(ex, "Invalid image upload request");
+            return Results.BadRequest(new { error = ex.Message });
         }
-
-        if (file.Length > 10 * 1024 * 1024)
+        catch (InvalidDataException ex)
         {
-            return Results.BadRequest(new { error = "File size exceeds 10MB limit" });
+            logger.LogWarning(ex, "Invalid multipart image upload request");
+            return Results.BadRequest(new { error = "Invalid image upload request" });
         }
-
-        var folder = context.Request.Query["folder"].ToString();
-        var targetFolder = string.IsNullOrEmpty(folder) ? "products" : folder;
-
-        using var stream = file.OpenReadStream();
-        var result = await cloudinaryService.UploadImageAsync(stream, file.FileName, targetFolder);
-
-        if (result.Error != null)
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = result.Error.Message });
+            logger.LogError(ex, "Failed to upload image to Cloudinary");
+            return Results.Json(
+                new { error = $"Không thể upload ảnh lên Cloudinary: {ex.Message}" },
+                statusCode: StatusCodes.Status502BadGateway);
         }
-
-        return Results.Ok(new
-        {
-            publicId = result.PublicId,
-            url = result.SecureUrl.ToString(),
-            format = result.Format,
-            width = result.Width,
-            height = result.Height
-        });
     }
 
     private static async Task<IResult> DeleteImage(

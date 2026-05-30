@@ -913,10 +913,22 @@ var category = await db.Categories
         AppDbContext db,
         CancellationToken ct)
     {
+        var name = request.Name?.Trim();
+        var slug = request.Slug?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(slug))
+        {
+            return Results.BadRequest(new ApiResponse<CategoryManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Tên danh mục và slug là bắt buộc")
+            ));
+        }
+
         // Check if slug already exists
         var existingCategory = await db.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Slug == request.Slug && c.DeletedAt == null, ct);
+            .FirstOrDefaultAsync(c => c.Slug == slug, ct);
 
         if (existingCategory is not null)
         {
@@ -929,8 +941,8 @@ var category = await db.Categories
 
         var category = new Category
         {
-            Name = request.Name,
-            Slug = request.Slug,
+            Name = name,
+            Slug = slug,
             Description = request.Description,
             ImageUrl = request.ImageUrl,
             IsActive = true,
@@ -965,6 +977,18 @@ var category = await db.Categories
         AppDbContext db,
         CancellationToken ct)
     {
+        var name = request.Name?.Trim();
+        var slug = request.Slug?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(slug))
+        {
+            return Results.BadRequest(new ApiResponse<CategoryManagementDto>(
+                Success: false,
+                Data: null,
+                Error: new ApiError("VALIDATION_ERROR", "Tên danh mục và slug là bắt buộc")
+            ));
+        }
+
         var category = await db.Categories
             .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null, ct);
 
@@ -980,7 +1004,7 @@ var category = await db.Categories
         // Check if slug already exists for another category
         var existingSlug = await db.Categories
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Slug == request.Slug && c.Id != id && c.DeletedAt == null, ct);
+            .FirstOrDefaultAsync(c => c.Slug == slug && c.Id != id, ct);
 
         if (existingSlug is not null)
         {
@@ -996,8 +1020,8 @@ var category = await db.Categories
             .AsNoTracking()
             .CountAsync(p => p.CategoryId == id && !p.IsDeleted, ct);
 
-        category.Name = request.Name;
-        category.Slug = request.Slug;
+        category.Name = name;
+        category.Slug = slug;
         category.Description = request.Description;
         category.ImageUrl = request.ImageUrl;
         category.IsActive = request.IsActive;

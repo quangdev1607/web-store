@@ -3,6 +3,8 @@
  * Requires Admin role
  */
 import axios from '@/api/axios';
+import rawAxios from 'axios';
+import { API_CONFIG } from '@/config/constants';
 import type {
   ApiResponse,
   DashboardStats,
@@ -296,17 +298,15 @@ export async function uploadImage(
     formData.append('folder', folder);
   }
 
-  const response = await axios.post<{
+  const response = await rawAxios.post<{
     publicId: string;
     url: string;
     format: string;
     width: number;
     height: number;
-  }>('/images/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+  }>(`${API_CONFIG.baseUrl}/images/upload`, formData, {
     params: folder ? { folder } : undefined,
+    timeout: 120000,
   });
   return response.data;
 }
