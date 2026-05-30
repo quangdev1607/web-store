@@ -1,2 +1,6 @@
 .opencode
 skills-lock.json
+*.zip
+*.sql
+.agents
+.codex
