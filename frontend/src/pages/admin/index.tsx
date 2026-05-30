@@ -84,6 +84,39 @@ const DEFAULT_STATS: DashboardStats = {
     recentOrders: [],
 };
 
+function createSlug(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "d")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function getRequestErrorMessage(err: unknown) {
+    if (err instanceof Error && err.message.toLowerCase().includes("timeout")) {
+        return "Upload ảnh mất quá lâu. Vui lòng thử lại hoặc chọn ảnh nhỏ hơn.";
+    }
+
+    if (typeof err !== "object" || err === null || !("response" in err)) {
+        return null;
+    }
+
+    const response = (err as { response?: { data?: unknown } }).response;
+    const data = response?.data;
+
+    if (typeof data !== "object" || data === null) {
+        return null;
+    }
+
+    const fields = data as { error?: unknown; detail?: unknown; message?: unknown; title?: unknown };
+    const message = fields.error ?? fields.detail ?? fields.message ?? fields.title;
+
+    return typeof message === "string" ? message : null;
+}
+
 type TabType = "dashboard" | "orders" | "products" | "categories" | "users";
 
 export function AdminPage() {
@@ -585,12 +618,22 @@ function ProductsContent() {
             setSelectedFiles((prev) => [...prev, ...files]);
             const newPreviews = files.map((file) => URL.createObjectURL(file));
             setImagePreviews((prev) => [...prev, ...newPreviews]);
+            e.target.value = "";
         }
     };
 
     const handleRemoveImage = (index: number) => {
-        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-        setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => {
+            const preview = prev[index];
+
+            if (preview?.startsWith("blob:")) {
+                const selectedFileIndex = prev.slice(0, index).filter((item) => item.startsWith("blob:")).length;
+                setSelectedFiles((files) => files.filter((_, i) => i !== selectedFileIndex));
+                URL.revokeObjectURL(preview);
+            }
+
+            return prev.filter((_, i) => i !== index);
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -598,16 +641,17 @@ function ProductsContent() {
         try {
             setIsUploading(true);
 
-            let imageUrls: string[] = [];
+            const existingImageUrls = imagePreviews.filter((preview) => !preview.startsWith("blob:"));
+            const uploadedImageUrls: string[] = [];
 
             if (selectedFiles.length > 0) {
                 for (const file of selectedFiles) {
                     const result = await uploadImage(file, "products");
-                    imageUrls.push(result.url);
+                    uploadedImageUrls.push(result.url);
                 }
-            } else if (formData.imageUrl) {
-                imageUrls = [formData.imageUrl];
             }
+
+            const imageUrls = [...existingImageUrls, ...uploadedImageUrls];
 
             const productData = {
                 name: formData.name,
@@ -615,6 +659,7 @@ function ProductsContent() {
                 price: parseInt(formData.price, 10),
                 images: imageUrls,
                 inStock: formData.inStock,
+                isActive: formData.inStock,
                 stockQuantity: parseInt(formData.stockQuantity, 10) || 0,
                 categoryId: formData.categoryId ? parseInt(formData.categoryId, 10) : undefined,
             };
@@ -628,7 +673,7 @@ function ProductsContent() {
             fetchProducts();
         } catch (err) {
             console.error("Failed to save product:", err);
-            setError("Không thể lưu sản phẩm");
+            setError(getRequestErrorMessage(err) ?? "Không thể lưu sản phẩm");
         } finally {
             setIsUploading(false);
         }
@@ -909,6 +954,7 @@ function CategoriesContent() {
         try {
             const categoryData = {
                 name: formData.name,
+                slug: createSlug(formData.name),
                 description: formData.description,
                 imageUrl: formData.imageUrl || undefined,
                 isActive: formData.isActive,
