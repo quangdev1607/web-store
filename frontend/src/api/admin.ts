@@ -57,6 +57,15 @@ export async function getAdminOrders(
 }
 
 /**
+ * Get order by ID (admin view)
+ * GET /api/admin/orders/{id}
+ */
+export async function getAdminOrderById(id: number): Promise<Order> {
+  const response = await axios.get<ApiResponse<Order>>(`/admin/orders/${id}`);
+  return response.data.data;
+}
+
+/**
  * Update order status
  * PATCH /api/admin/orders/{id}/status
  */

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TiemBanhBeYeu.Api.Domain.Entities;
@@ -19,26 +20,35 @@ public static class OrderEndpoints
             .WithName("CreateOrder")
             .Produces<ApiResponse<CreateOrderResponse>>()
             .ProducesValidationProblem()
-            .ProducesProblem(400);
+            .ProducesProblem(400)
+            .ProducesProblem(401)
+            .RequireAuthorization();
 
         // GET /api/orders - Get current user's orders
         orders.MapGet("/", GetMyOrders)
             .WithName("GetMyOrders")
             .Produces<ApiResponse<PagedResponse<OrderSummaryDto>>>()
-            .ProducesProblem(401);
+            .ProducesProblem(401)
+            .RequireAuthorization();
 
         // GET /api/orders/{id} - Get order by ID
         orders.MapGet("/{id:int}", GetOrderById)
             .WithName("GetOrderById")
             .Produces<ApiResponse<OrderDto>>()
-            .ProducesProblem(404);
+            .ProducesProblem(401)
+            .ProducesProblem(404)
+            .RequireAuthorization();
     }
 
     private static async Task<IResult> CreateOrder(
         CreateOrderRequest request,
+        HttpContext httpContext,
         AppDbContext db = null!,
         CancellationToken ct = default)
     {
+        var userId = GetUserId(httpContext);
+        if (userId is null) return Results.Unauthorized();
+
         // Validate request
         if (string.IsNullOrWhiteSpace(request.CustomerInfo?.Name))
         {
@@ -132,6 +142,7 @@ public static class OrderEndpoints
         var order = new Order
         {
             OrderCode = orderCode,
+            UserId = userId.Value,
             CustomerName = request.CustomerInfo.Name,
             CustomerPhone = request.CustomerInfo.Phone,
             CustomerEmail = request.CustomerInfo.Email,
@@ -162,13 +173,17 @@ public static class OrderEndpoints
 
     private static async Task<IResult> GetOrderById(
         int id,
+        HttpContext httpContext,
         AppDbContext db = null!,
         CancellationToken ct = default)
     {
+        var userId = GetUserId(httpContext);
+        if (userId is null) return Results.Unauthorized();
+
         var order = await db.Orders
             .AsNoTracking()
             .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == id, ct);
+            .FirstOrDefaultAsync(o => o.Id == id && o.UserId == userId.Value, ct);
 
         if (order is null)
         {
@@ -218,12 +233,16 @@ public static class OrderEndpoints
         AppDbContext db = null!,
         CancellationToken ct = default)
     {
+        var userId = GetUserId(httpContext);
+        if (userId is null) return Results.Unauthorized();
+
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 20;
         if (pageSize > 100) pageSize = 100;
 
         var query = db.Orders
             .AsNoTracking()
+            .Where(o => o.UserId == userId.Value)
             .AsQueryable();
 
         // Filter by status
@@ -272,5 +291,11 @@ public static class OrderEndpoints
         var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         var random = Random.Shared.Next(1000, 9999);
         return $"ORD-{timestamp}-{random}";
+    }
+
+    private static int? GetUserId(HttpContext httpContext)
+    {
+        var userIdClaim = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(userIdClaim, out var userId) ? userId : null;
     }
 }
